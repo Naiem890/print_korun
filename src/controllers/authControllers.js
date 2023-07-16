@@ -1,37 +1,13 @@
-const express = require("express");
-const app = express();
-const cors = require("cors");
-const logger = require("morgan");
 const axios = require("axios");
-const { calculateTimeDifferenceInMinutes } = require("./helper/timeDiffInMin");
-const { generateNumericOTP } = require("./helper/otpGenerator");
-
-// load env variables
-require("dotenv").config();
-
-const port = process.env.PORT || 5000;
+const {
+  generateNumericOTP,
+  calculateTimeDifferenceInMinutes,
+} = require("../utils/helper");
 
 // In-memory storage for OTPs and their creation timestamps
 const otpStorage = {};
 
-// Middleware Array
-const middleware = [
-  logger("dev"),
-  cors(),
-  express.static("public"),
-  express.urlencoded({ extended: true }),
-  express.json(),
-];
-
-app.use(middleware);
-
-// Default route
-app.get("/", (req, res) => {
-  res.send("Welcome to the Print Korun app!");
-});
-
-// API route to send OTP
-app.post("/api/auth/send-otp", (req, res) => {
+const sendOTP = async (req, res) => {
   const phoneNumber = req.body.phoneNumber;
 
   if (!phoneNumber) {
@@ -46,7 +22,7 @@ app.post("/api/auth/send-otp", (req, res) => {
     createdAt: new Date(),
   };
 
-  axios
+  await axios
     .post(`http://bulksmsbd.net/api/smsapi`, {
       api_key: process.env.API_KEY,
       type: "text",
@@ -63,10 +39,9 @@ app.post("/api/auth/send-otp", (req, res) => {
       res.status(500).json({ error: "Failed to send OTP" });
     });
   console.log("otpStorage", otpStorage);
-});
+};
 
-// API route to verify OTP
-app.post("/api/auth/verify-otp", (req, res) => {
+const verifyOTP = async (req, res) => {
   const phoneNumber = req.body.phoneNumber;
   const userEnteredOTP = req.body.otp;
 
@@ -102,14 +77,9 @@ app.post("/api/auth/verify-otp", (req, res) => {
   delete otpStorage[phoneNumber];
 
   res.json({ message: "OTP verification successful" });
-});
+};
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: "Internal Server Error" });
-});
-
-app.listen(port, () => {
-  console.log(`Print Korun app listening on port ${port}`);
-});
+module.exports = {
+  sendOTP,
+  verifyOTP,
+};
