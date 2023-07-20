@@ -47,10 +47,9 @@ export default function Login() {
   return (
     <section className="bg-white dark:bg-gray-900">
       <div className="container flex items-center justify-center min-h-screen px-6 mx-auto">
-        <div id="recaptcha-container"></div>
         <form
           onSubmit={otpSend ? verifyOTPHandler : sendOTPHandler}
-          className="w-full max-w-md px-10 py-20 "
+          className="w-full max-w-md px-2 -mt-20"
         >
           <img
             className="w-auto h-7 sm:h-8 mb-4 inline-block"
