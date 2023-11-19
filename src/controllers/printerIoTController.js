@@ -1,0 +1,40 @@
+const router = require("express").Router();
+const { checkAdminRole } = require("../middlewares/checkAdminRole");
+const { validateToken } = require("../middlewares/validateToken");
+const PrinterIoT = require("../models/printerIoT");
+
+// Create a new printer
+router.post("/create", validateToken, checkAdminRole, async (req, res) => {
+  try {
+    const {
+      name,
+      location,
+      googleMapLink,
+      ip,
+      status,
+      colorPrintPrice,
+      bAndWPrintPrice,
+    } = req.body;
+
+    // Create a new printer instance
+    const newPrinterIoT = new PrinterIoT({
+      name,
+      location,
+      googleMapLink,
+      ip,
+      status,
+      colorPrintPrice,
+      bAndWPrintPrice,
+    });
+
+    // Save the printer to the database
+    const savedPrinterIoT = await newPrinterIoT.save();
+
+    res.status(200).json({printerIoT: savedPrinterIoT, message: "Printer created successfully"});
+  } catch (error) {
+    console.error("Error creating printer:", error);
+    res.status(500).json({ error: "Failed to create printer" });
+  }
+});
+
+module.exports = router;
