@@ -17,10 +17,7 @@ import { EditPrinterModal } from "./EditPrinterModal";
 import { AddPrinterModal } from "./AddPrinterModal";
 
 export const AdminPrinters = () => {
-  const [sortBy, setSortBy] = useState(null);
-  const [sortAsc, setSortAsc] = useState(true);
-  const [students, setStudents] = useState([]);
-  const [filteredStudents, setFilteredStudents] = useState([]);
+  const [printerIoTs, setPrinterIoTs] = useState([]);
   const [department, setDepartment] = useState("");
   const [gender, setGender] = useState("");
   const [showModal, setShowModal] = useState(false);
@@ -31,150 +28,26 @@ export const AdminPrinters = () => {
   const [refetchHallIdHandler, setRefetchHallIdHandler] = useState(false);
 
   useEffect(() => {
-    fetchStudents();
+    fetchPrinterIoT();
 
-    async function fetchStudents() {
-      const result = await Axios.get("/student/all");
-      console.log("students", result.data);
-      setStudents(result.data);
+    async function fetchPrinterIoT() {
+      const result = await Axios.get("/printerIoT/all");
+      console.log("printers", result.data);
+      setPrinterIoTs(result.data.printerIoTs);
     }
   }, [refetch]);
-
-  const toggleSort = (column) => {
-    if (sortBy === column) {
-      setSortAsc(!sortAsc);
-    } else {
-      setSortBy(column);
-      setSortAsc(true);
-    }
-  };
 
   const refetchHandler = () => {
     setRefetch((prev) => !prev);
   };
 
-  useEffect(() => {
-    const filterSearch = (student) => {
-      if (search === "") {
-        return student;
-      } else if (
-        student.studentId.toLowerCase().includes(search.toLowerCase()) ||
-        student.hallId.toLowerCase().includes(search.toLowerCase()) ||
-        student.name.toLowerCase().includes(search.toLowerCase())
-      ) {
-        return student;
-      }
-    };
-
-    const filterDepartment = (student) => {
-      if (department === "") {
-        return student;
-      } else if (student.department === department) {
-        return student;
-      }
-    };
-
-    const filterGender = (student) => {
-      if (gender === "") {
-        return student;
-      } else if (student.gender === gender) {
-        return student;
-      }
-    };
-
-    const filteredResult = students
-      .filter(filterSearch)
-      .filter(filterDepartment)
-      .filter(filterGender);
-
-    if (sortBy) {
-      filteredResult.sort((a, b) => {
-        if (a[sortBy] < b[sortBy]) {
-          return sortAsc ? -1 : 1;
-        }
-        if (a[sortBy] > b[sortBy]) {
-          return sortAsc ? 1 : -1;
-        }
-        return 0;
-      });
-    }
-    console.log(filteredResult);
-
-    setFilteredStudents(filteredResult);
-  }, [sortBy, sortAsc, search, department, students, gender]);
-
   const handleEditAccount = (student) => {
     setShowModal(true);
     setStudent(student);
   };
+
   const handleAddAccount = () => {
     setShowAddStudentModal(true);
-  };
-
-  const handleResetPassword = async (student) => {
-    const result = await Swal.fire({
-      title: "Are you sure?",
-      html: `<div>
-        You want to reset password for
-        <p style="color:#f27474;">
-          <br /> 
-          Name: ${student.name} 
-          <br /> 
-          Roll: ${student.studentId}
-          <br /> 
-          Hall Id: ${student.hallId}
-        </p>
-      </div>`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
-      confirmButtonText: "Yes, Reset!",
-    });
-
-    if (result.isConfirmed) {
-      try {
-        const result = await Axios.post("/auth/password-reset", student);
-        toast.success(result.data.message);
-      } catch (error) {
-        console.log(error);
-        toast.error(error.response.data.message);
-      }
-    }
-  };
-
-  const handleDeleteAccount = async (student) => {
-    const result = await Swal.fire({
-      title: "Are you sure?",
-      html: `<div>
-        You want to delete account for
-        <p style="color:#f27474;">
-          <br /> 
-          Name: ${student.name} 
-          <br /> 
-          Roll: ${student.studentId}
-          <br /> 
-          Hall Id: ${student.hallId}
-        </p>
-      </div>`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
-      confirmButtonText: "Yes, Delete!",
-    });
-
-    if (result.isConfirmed) {
-      try {
-        const result = await Axios.delete(`/student/${student.studentId}`);
-        toast.success(result.data.message);
-        setRefetchHallIdHandler((prev) => !prev);
-        setStudents(students.filter((s) => s._id !== student._id));
-      } catch (error) {
-        console.log(error);
-        toast.error(error.response.data.message);
-      }
-    }
   };
 
   return (
@@ -184,7 +57,7 @@ export const AdminPrinters = () => {
       <div className="flex justify-between items-center mb-6 gap-12">
         <div className="">
           <h3 className="text-xl font-semibold mr-4 basis-1/3">
-            Total Printers: {filteredStudents.length}
+            Total Printers: {printerIoTs.length}
           </h3>
         </div>
         <div className="flex gap-2 basis-2/3">
@@ -226,9 +99,50 @@ export const AdminPrinters = () => {
             }}
             className={`${fixedButtonClass} btn-sm h-auto basis-40 ml-2`}
           >
-            <PlusIcon className="w-4 h-4" /> Add Student
+            <PlusIcon className="w-4 h-4" /> Add Printer
           </button>
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {printerIoTs.map((printerIoT) => (
+          <div
+            key={printerIoT._id}
+            className="max-w-md mx-auto bg-white rounded-xl overflow-hidden shadow-lg mb-4"
+          >
+            <div className="md:flex">
+              <div className="md:flex-shrink-0">
+                {/* <img
+                  className="h-48 w-full object-cover md:w-48"
+                  src="your-image-source.jpg" // Replace with actual image source
+                  alt="Printer Image"
+                /> */}
+              </div>
+              <div className="p-8">
+                <div className="uppercase tracking-wide text-sm text-indigo-500 font-semibold">
+                  {printerIoT.name}
+                </div>
+                <p className="block mt-1 text-lg leading-tight font-semibold text-gray-900">
+                  {printerIoT.location}
+                </p>
+                <p className="mt-2 text-gray-600">{`IP Address: ${printerIoT.ip}`}</p>
+                <p className="mt-2 text-gray-600">{`Status: ${printerIoT.status}`}</p>
+                <p className="mt-2 text-gray-600">{`Color Print Price: ${printerIoT.colorPrintPrice}`}</p>
+                <p className="mt-2 text-gray-600">{`B&W Print Price: ${printerIoT.BWPrintPrice}`}</p>
+                {printerIoT.googleMapLink && (
+                  <a
+                    href={printerIoT.googleMapLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 text-indigo-500 hover:text-indigo-600"
+                  >
+                    View on Google Maps
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
 
       <AddPrinterModal
@@ -242,7 +156,7 @@ export const AdminPrinters = () => {
         showModal={showModal}
         setShowModal={setShowModal}
         student={student}
-        setStudents={setStudents}
+        // setStudents={setStudents}
         setStudent={setStudent}
       />
     </div>

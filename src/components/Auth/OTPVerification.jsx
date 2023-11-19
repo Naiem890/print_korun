@@ -51,7 +51,7 @@ export default function OTPVerification() {
 
       toast.success("OTP sent successfully");
 
-      navigate("/printers");
+      navigate("/dashboard/");
     } catch (error) {
       toast.error(error.response.data.error);
     }
