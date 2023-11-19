@@ -30,7 +30,10 @@ router.post("/", validateToken, checkAdminRole, async (req, res) => {
     // Save the printer to the database
     const savedPrinterIoT = await newPrinterIoT.save();
 
-    res.status(200).json({printerIoT: savedPrinterIoT, message: "Printer created successfully"});
+    res.status(200).json({
+      printerIoT: savedPrinterIoT,
+      message: "Printer created successfully",
+    });
   } catch (error) {
     console.error("Error creating printer:", error);
     res.status(500).json({ error: "Failed to create printer" });
@@ -48,15 +51,23 @@ router.get("/:printerIoTId", validateToken, async (req, res) => {
         return res.status(404).json({ error: "Printer not found" });
       }
 
-      return res.status(200).json({ printerIoTs: result, message: "Printer retrieved successfully" });
+      return res.status(200).json({
+        printerIoTs: result,
+        statusEnum: PrinterIoT.schema.path("status").enumValues,
+        message: "Printer retrieved successfully",
+      });
     }
 
     const result = await PrinterIoT.find();
-    res.status(200).json({ printerIoTs: result, message: "All printers retrieved successfully" });
-
+    res.status(200).json({
+      printerIoTs: result,
+      statusEnum: PrinterIoT.schema.path("status").enumValues,
+      message: "All printers retrieved successfully",
+    });
   } catch (error) {
     console.error("Error fetching printer(s):", error);
     res.status(500).json({ error: "Failed to retrieve printer(s)" });
   }
 });
+
 module.exports = router;
