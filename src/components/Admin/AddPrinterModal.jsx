@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 import React, { useEffect, useState } from "react";
 import { Axios } from "../../api/api";
 import { toast } from "react-hot-toast";
@@ -7,7 +8,7 @@ import {
   fixedButtonClass,
   fixedInputClass,
 } from "../../Utils/constant";
-import { XCircleIcon } from "@heroicons/react/24/outline";
+import { XCircleIcon, ArrowLongRightIcon } from "@heroicons/react/24/outline";
 
 export const AddPrinterModal = ({
   showAddStudentModal,
@@ -16,47 +17,41 @@ export const AddPrinterModal = ({
   setRefetchHallIdHandler,
   refetchHallIdHandler,
 }) => {
-  const [profileImage, setProfileImage] = useState(null);
-  const [image, setImage] = useState("");
-  const [hallId, setHallId] = useState("");
-  const fileToBase64 = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = (error) => reject(error);
-    });
-  };
-  useEffect(() => {
-    const getHallId = async () => {
-      const response = await Axios.get("/student/hallId");
-      setHallId(response.data.hallId);
-    };
-    getHallId();
-  }, [refetchHallIdHandler]);
-
-  const handleAddStudent = async (e) => {
+  const handleAddPrinter = async (e) => {
     e.preventDefault();
+
+    // Fetch values from the form directly
+    const name = e.target.elements.name.value;
+    const location = e.target.elements.location.value;
+    const googleMapLink = e.target.elements.googleMapLink.value || "";
+    const ip = e.target.elements.piIpAddress.value;
+    const colorPrintPrice = e.target.elements.colorPrintPrice.value || 0;
+    const BWPrintPrice = e.target.elements.bwPrintPrice.value || 0;
+
     try {
-      const formData = new FormData();
-      formData.append("profileImage", profileImage);
-      formData.append("name", e.target.name.value);
-      formData.append("phoneNumber", e.target.phoneNumber.value);
-      formData.append("studentId", e.target.studentId.value);
-      formData.append("department", e.target.department.value);
-      formData.append("batch", e.target.batch.value);
-      formData.append("gender", e.target.gender.value);
-      formData.append("hallId", e.target.hallId.value);
+      // Make a POST request to your API endpoint
+      const response = await Axios.post("/printerIoT", {
+        name,
+        location,
+        googleMapLink,
+        ip,
+        colorPrintPrice,
+        BWPrintPrice,
+      });
 
-      const response = await Axios.post("/student/add", formData);
-
-      setShowAddStudentModal(false);
-      e.target.reset();
-      refetchHandler();
-      setRefetchHallIdHandler((prev) => !prev);
+      // Show success toast
       toast.success(response.data.message);
+
+      // Close the modal
+      // setShowAddStudentModal(false);
+
+      // You might want to trigger a refetch or update state here if needed
+      // refetchHandler();
+      // setRefetchHallIdHandler();
+      // refetchHallIdHandler();
     } catch (error) {
-      toast.error(error.response.data.message);
+      // Show error toast
+      toast.error(error.response.data.error);
     }
   };
 
@@ -68,8 +63,6 @@ export const AddPrinterModal = ({
       <button
         type="button"
         onClick={() => {
-          setImage("");
-          setProfileImage(null);
           setShowAddStudentModal(false);
         }}
         className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 cursor-pointer"
@@ -78,7 +71,7 @@ export const AddPrinterModal = ({
       </button>
       <h3 className="font-bold text-lg inline-block">Add Printer</h3>
       <div className="divide-2" />
-      <form onSubmit={handleAddStudent} className="flex flex-col gap-4 mt-4">
+      <form onSubmit={handleAddPrinter} className="flex flex-col gap-4 mt-4">
         <div className="">
           <label className="block text-sm font-medium leading-6 text-gray-600">
             Printer Name
@@ -151,6 +144,10 @@ export const AddPrinterModal = ({
             />
           </div>
         </div>
+        <p className="text-sm text-info">
+          💡 Keep relevant print service empty or 0 if printer doesn't support
+          it.
+        </p>
         <div className="mt-4 col-span-full flex justify-end gap-6">
           <button type="submit" className={`${fixedButtonClass} w-auto`}>
             Add Printer
