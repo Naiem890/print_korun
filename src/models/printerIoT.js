@@ -32,9 +32,11 @@ const printerIoTSchema = new mongoose.Schema({
   },
   colorPrintPrice: {
     type: Number,
+    default: 0,
   },
   BWPrintPrice: {
     type: Number,
+    default: 0,
   },
 });
 
