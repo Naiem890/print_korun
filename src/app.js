@@ -7,6 +7,7 @@ const apiRoutes = require("./routes/index");
 // load env variables
 require("dotenv").config();
 
+// eslint-disable-next-line no-undef
 const port = process.env.PORT || 5000;
 
 // Middleware Array
