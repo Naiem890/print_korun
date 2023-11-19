@@ -11,6 +11,7 @@ const printerIoTSchema = new mongoose.Schema({
   },
   googleMapLink: {
     type: String,
+    default: "",
   },
   ip: {
     type: String,

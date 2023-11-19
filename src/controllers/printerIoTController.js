@@ -37,16 +37,26 @@ router.post("/", validateToken, checkAdminRole, async (req, res) => {
   }
 });
 
-router.get("/", validateToken, async (req, res) => {
+router.get("/:printerIoTId", validateToken, async (req, res) => {
   try {
-    // Fetch all printers from the database
-    const allPrinters = await PrinterIoT.find();
+    const { printerIoTId } = req.params;
 
-    res.status(200).json({ printers: allPrinters, message: "Printers retrieved successfully" });
+    if (printerIoTId && printerIoTId.toLowerCase() !== "all") {
+      const result = await PrinterIoT.findById(printerIoTId);
+
+      if (!result) {
+        return res.status(404).json({ error: "Printer not found" });
+      }
+
+      return res.status(200).json({ printerIoTs: result, message: "Printer retrieved successfully" });
+    }
+
+    const result = await PrinterIoT.find();
+    res.status(200).json({ printerIoTs: result, message: "All printers retrieved successfully" });
+
   } catch (error) {
-    console.error("Error fetching printers:", error);
-    res.status(500).json({ error: "Failed to retrieve printers" });
+    console.error("Error fetching printer(s):", error);
+    res.status(500).json({ error: "Failed to retrieve printer(s)" });
   }
 });
-
 module.exports = router;
