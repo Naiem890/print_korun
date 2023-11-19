@@ -3,28 +3,29 @@ import {
   PencilIcon,
   PlusIcon,
   TrashIcon,
+  GlobeAltIcon,
+  MapPinIcon,
+  CurrencyBangladeshiIcon,
+  MapIcon,
+  PrinterIcon,
 } from "@heroicons/react/24/outline";
 import React, { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import Swal from "sweetalert2";
-import {
-  DEPARTMENTS,
-  fixedButtonClass,
-  fixedInputClass,
-} from "../../Utils/constant";
+import { fixedButtonClass, fixedInputClass } from "../../Utils/constant";
 import { Axios } from "../../api/api";
 import { EditPrinterModal } from "./EditPrinterModal";
 import { AddPrinterModal } from "./AddPrinterModal";
 
 export const AdminPrinters = () => {
   const [printerIoTs, setPrinterIoTs] = useState([]);
-  const [department, setDepartment] = useState("");
-  const [gender, setGender] = useState("");
+  const [statusEnum, setStatusEnum] = useState([]);
+  const [status, setStatus] = useState("");
   const [showModal, setShowModal] = useState(false);
-  const [showAddStudentModal, setShowAddStudentModal] = useState(false);
   const [search, setSearch] = useState("");
-  const [student, setStudent] = useState(null);
+  const [printerIoT, setPrinterIoT] = useState(null);
   const [refetch, setRefetch] = useState(false);
+  const [showAddPrintIoTModal, setShowAddPrintIoTModal] = useState(false);
   const [refetchHallIdHandler, setRefetchHallIdHandler] = useState(false);
 
   useEffect(() => {
@@ -34,6 +35,7 @@ export const AdminPrinters = () => {
       const result = await Axios.get("/printerIoT/all");
       console.log("printers", result.data);
       setPrinterIoTs(result.data.printerIoTs);
+      setStatusEnum(result.data.statusEnum);
     }
   }, [refetch]);
 
@@ -41,13 +43,48 @@ export const AdminPrinters = () => {
     setRefetch((prev) => !prev);
   };
 
-  const handleEditAccount = (student) => {
-    setShowModal(true);
-    setStudent(student);
+  const handleAddAccount = () => {
+    setShowAddPrintIoTModal(true);
   };
 
-  const handleAddAccount = () => {
-    setShowAddStudentModal(true);
+  const handleEditPrinter = (printerIoT) => {
+    setPrinterIoT(printerIoT);
+    setShowModal(true);
+  };
+
+  const handleDeletePrinter = () => {
+    console.log("delete printerIoT");
+  };
+
+  // Function to get color based on printerIoT status
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "ONLINE":
+        return "green-500";
+      case "OFFLINE":
+        return "red-500";
+      case "ACTIVE":
+        return "blue-500";
+      case "INACTIVE":
+        return "gray-500";
+      case "PAPER_JAM":
+        return "orange-500";
+      case "NO_PAPER":
+        return "yellow-500";
+      case "NO_TONER":
+        return "purple-500";
+      default:
+        return "gray-500";
+    }
+  };
+
+  const handlePrinterFilter = (printerIoT) => {
+    return (
+      (!status || printerIoT.status === status) &&
+      (printerIoT.name.toLowerCase().includes(search.toLowerCase()) ||
+        printerIoT.location.toLowerCase().includes(search.toLowerCase()) ||
+        printerIoT._id.toLowerCase().includes(search.toLowerCase()))
+    );
   };
 
   return (
@@ -60,29 +97,28 @@ export const AdminPrinters = () => {
             Total Printers: {printerIoTs.length}
           </h3>
         </div>
-        <div className="flex gap-2 basis-2/3">
+        <div className="flex gap-2 basis-1/2">
           <select
-            value={gender}
-            onChange={(e) => setGender(e.target.value)}
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
             className={`${fixedInputClass} h-auto basis-1/4`}
           >
             <option selected value="">
-              Gender
+              Status
             </option>
-            <option value="MALE">MALE</option>
-            <option value="FEMALE">FEMALE</option>
-          </select>
-          <select
-            value={department}
-            onChange={(e) => setDepartment(e.target.value)}
-            className={`${fixedInputClass} h-auto basis-1/4`}
-          >
-            <option selected value="">
-              Departments
-            </option>
-            {DEPARTMENTS.map((department) => (
-              <option key={department} value={department}>
-                {department}
+            {statusEnum.map((status, i) => (
+              <option key={i} value={status}>
+                <div className="flex items-baseline pt-4 gap-2 mt-auto">
+                  <div
+                    className={`bg-${getStatusColor(
+                      status
+                    )} rounded-full min-w-[12px] min-h-[12px]`}
+                    title={status}
+                  ></div>
+                  <p
+                    className={`text-${getStatusColor(status)}`}
+                  >{`${status}`}</p>
+                </div>
               </option>
             ))}
           </select>
@@ -90,7 +126,7 @@ export const AdminPrinters = () => {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search Name, Roll, Hall ID"
+            placeholder="Search Printer Id, Name, Location"
             className={`${fixedInputClass} h-auto basis-2/4`}
           />
           <button
@@ -104,50 +140,131 @@ export const AdminPrinters = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {printerIoTs.map((printerIoT) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {printerIoTs.filter(handlePrinterFilter).map((printerIoT) => (
           <div
             key={printerIoT._id}
-            className="max-w-md mx-auto bg-white rounded-xl overflow-hidden shadow-lg mb-4"
+            className="bg-white rounded-xl shadow-sm border hover:shadow-xl transition-all cursor-pointer mb-4 relative group px-8 py-6 flex flex-col"
           >
-            <div className="md:flex">
-              <div className="md:flex-shrink-0">
-                {/* <img
-                  className="h-48 w-full object-cover md:w-48"
-                  src="your-image-source.jpg" // Replace with actual image source
-                  alt="Printer Image"
-                /> */}
+            <div className="uppercase tracking-wide text-sm text-indigo-500 font-semibold flex justify-between items-baseline gap-4">
+              <h1 className="text-lg leading-tight font-semibold text-gray-900">
+                {printerIoT.name}
+              </h1>
+              <div className="flex gap-4 items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <PencilIcon
+                  onClick={() => {
+                    handleEditPrinter(printerIoT);
+                  }}
+                  className="w-6 h-6 text-blue-500 cursor-pointer"
+                />
+                <TrashIcon
+                  onClick={handleDeletePrinter}
+                  className="w-6 h-6 text-red-500 cursor-pointer"
+                />
               </div>
-              <div className="p-8">
-                <div className="uppercase tracking-wide text-sm text-indigo-500 font-semibold">
-                  {printerIoT.name}
-                </div>
-                <p className="block mt-1 text-lg leading-tight font-semibold text-gray-900">
-                  {printerIoT.location}
-                </p>
-                <p className="mt-2 text-gray-600">{`IP Address: ${printerIoT.ip}`}</p>
-                <p className="mt-2 text-gray-600">{`Status: ${printerIoT.status}`}</p>
-                <p className="mt-2 text-gray-600">{`Color Print Price: ${printerIoT.colorPrintPrice}`}</p>
-                <p className="mt-2 text-gray-600">{`B&W Print Price: ${printerIoT.BWPrintPrice}`}</p>
-                {printerIoT.googleMapLink && (
-                  <a
-                    href={printerIoT.googleMapLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-2 text-indigo-500 hover:text-indigo-600"
+            </div>
+            <div className="divider mt-3 opacity-40"></div>
+            <div className="">
+              <InfoBlock
+                icon={
+                  <PrinterIcon className="w-6 h-6 min-w-[24px] min-h-[24px]" />
+                }
+                title={"Printer Id"}
+                value={
+                  <p
+                    onClick={() => {
+                      navigator.clipboard.writeText(printerIoT._id);
+                      toast.success("Printer ID Copied");
+                    }}
                   >
-                    View on Google Maps
-                  </a>
-                )}
+                    {" "}
+                    {printerIoT._id} #
+                  </p>
+                }
+              />
+              <InfoBlock
+                icon={
+                  <MapPinIcon className="w-6 h-6 min-w-[24px] min-h-[24px]" />
+                }
+                title={"Location"}
+                value={printerIoT.location}
+              />
+              {printerIoT.googleMapLink ? (
+                <InfoBlock
+                  icon={
+                    <MapIcon className="w-6 h-6 min-w-[24px] min-h-[24px]" />
+                  }
+                  title={"Google Map Link"}
+                  value={
+                    <a
+                      href={printerIoT.googleMapLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-2 text-indigo-900 hover:text-indigo-900"
+                    >
+                      View on Google Maps
+                    </a>
+                  }
+                />
+              ) : (
+                ""
+              )}
+              {printerIoT.ip ? (
+                <InfoBlock
+                  icon={
+                    <GlobeAltIcon className="w-6 h-6 min-w-[24px] min-h-[24px]" />
+                  }
+                  title={"IP Address"}
+                  value={
+                    <a
+                      target="_blank"
+                      href={`http://${printerIoT.ip}`}
+                      rel="noreferrer"
+                      className="underline"
+                    >
+                      {printerIoT.ip}
+                    </a>
+                  }
+                />
+              ) : (
+                ""
+              )}
+              <div className="flex justify-between">
+                <InfoBlock
+                  icon={
+                    <CurrencyBangladeshiIcon className="w-6 h-6 min-w-[24px] min-h-[24px]" />
+                  }
+                  title={"Color Print Price"}
+                  value={`Color: ${printerIoT.colorPrintPrice} BDT`}
+                />
+                <InfoBlock
+                  icon={
+                    <CurrencyBangladeshiIcon className="w-6 h-6 min-w-[24px] min-h-[24px]" />
+                  }
+                  title={"Black & White Print Price"}
+                  value={`B&W: ${printerIoT.BWPrintPrice} BDT`}
+                />
               </div>
+            </div>
+
+            <div className="flex items-baseline pt-4 gap-2 mt-auto">
+              <div
+                className={`bg-${getStatusColor(
+                  printerIoT.status
+                )} rounded-full min-w-[12px] min-h-[12px]`}
+                title={printerIoT.status}
+              ></div>
+              <p
+                className={`text-${getStatusColor(printerIoT.status)}`}
+              >{`${printerIoT.status}`}</p>
             </div>
           </div>
         ))}
       </div>
 
       <AddPrinterModal
-        showAddStudentModal={showAddStudentModal}
-        setShowAddStudentModal={setShowAddStudentModal}
+        showAddPrintIoTModal={showAddPrintIoTModal}
+        setShowAddPrintIoTModal={setShowAddPrintIoTModal}
         refetchHandler={refetchHandler}
         setRefetchHallIdHandler={setRefetchHallIdHandler}
         refetchHallIdHandler={refetchHallIdHandler}
@@ -155,10 +272,21 @@ export const AdminPrinters = () => {
       <EditPrinterModal
         showModal={showModal}
         setShowModal={setShowModal}
-        student={student}
-        // setStudents={setStudents}
-        setStudent={setStudent}
+        printerIoT={printerIoT}
+        setPrinterIoT={setPrinterIoT}
       />
+    </div>
+  );
+};
+
+const InfoBlock = ({ icon, title, value }) => {
+  return (
+    <div className="flex flex-col justify-center mb-3" title={title}>
+      <div className="flex gap-2 opacity-70">
+        {icon}
+        <h3 className="">{value}</h3>
+      </div>
+      {/* <p className="text-gray-500 text-sm">{value}</p> */}
     </div>
   );
 };
