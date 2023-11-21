@@ -15,6 +15,7 @@ export const EditPrinterModal = ({
   setShowModal,
   printerIoT,
   setPrinterIoT,
+  refetchHandler,
 }) => {
   console.log("printerIoT", printerIoT);
 
@@ -25,6 +26,18 @@ export const EditPrinterModal = ({
   const [colorPrintPrice, setColorPrintPrice] = useState(
     printerIoT?.colorPrintPrice || 0
   );
+
+  useEffect(() => {
+    // Update the state when printerIoT changes
+    setName(printerIoT?.name || "");
+    setLocation(printerIoT?.location || "");
+    setGoogleMapLink(printerIoT?.googleMapLink || "");
+    setIp(printerIoT?.ip || "");
+    setColorPrintPrice(printerIoT?.colorPrintPrice || 0);
+    setBWPrintPrice(printerIoT?.BWPrintPrice || 0);
+    // console.log(name,location,googleMapLink,ip,colorPrintPrice,BWPrintPrice,"shovo");
+  }, [printerIoT]);
+
   const [BWPrintPrice, setBWPrintPrice] = useState(
     printerIoT?.BWPrintPrice || 0
   );
@@ -35,31 +48,37 @@ export const EditPrinterModal = ({
 
   const handleUpdatePrintIoT = async (e) => {
     e.preventDefault();
-
-    // Construct the formData object
-    const formData = {
-      name,
-      location,
-      googleMapLink,
-      ip,
-      colorPrintPrice,
-      BWPrintPrice,
-    };
-
-    // Perform the update logic using formData
+  
     try {
-      const result = await Axios.put(`/printerIoT/${printerIoT._id}`, formData);
-      console.log(result.data);
+      // Send a PUT request to update the printerIoT
+      const updatedPrinter = await Axios.put(
+        `/printerIoT/${printerIoT._id}`,
+        {
+          name,
+          location,
+          googleMapLink,
+          ip,
+          colorPrintPrice,
+          BWPrintPrice,
+        }
+      );
+  
+      // Update the local state with the updated printerIoT
+      setPrinterIoT(updatedPrinter.data.printerIoT);
+      console.log(name,location);
+      // Display a success message
       toast.success("Printer updated successfully!");
-      // Close the modal and trigger a refetch if necessary
+      refetchHandler();
+      // Close the modal
       setShowModal(false);
-      // Optionally trigger a refetch of printerIoTs
-      // setRefetch((prev) => !prev);
     } catch (error) {
       console.error("Error updating printer:", error);
+  
+      // Display an error message
       toast.error("Failed to update printer. Please try again.");
     }
   };
+  
 
   return (
     <Modal

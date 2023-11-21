@@ -52,11 +52,46 @@ export const AdminPrinters = () => {
     setShowModal(true);
   };
 
-  const handleDeletePrinter = () => {
-    console.log("delete printerIoT");
+  const handleDeletePrinter = async (printer) => {
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      html: `<div>
+        You want to delete the printer:
+        <p style="color:#f27474;">
+          <br /> 
+          Name: ${printer.name} 
+          <br /> 
+          Location: ${printer.location}
+          <br /> 
+          Status: ${printer.status}
+        </p>
+      </div>`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, Delete!",
+    });
+  
+    if (result.isConfirmed) {
+      try {
+        const response = await Axios.delete(`/printerIoT/${printer._id}`);
+  
+        if (response.status === 200) {
+          toast.success(response.data.message);
+          refetchHandler();
+        } else {
+          console.error("Failed to delete printer:", response.data.error);
+          toast.error(response.data.error);
+        }
+      } catch (error) {
+        console.error("Error deleting printer:", error);
+        toast.error("Failed to delete printer. Please try again.");
+      }
+    }
   };
+  
 
-  // Function to get color based on printerIoT status
   const getStatusColor = (status) => {
     switch (status) {
       case "ONLINE":
@@ -158,7 +193,7 @@ export const AdminPrinters = () => {
                   className="w-6 h-6 text-blue-500 cursor-pointer"
                 />
                 <TrashIcon
-                  onClick={handleDeletePrinter}
+                  onClick={()=>{handleDeletePrinter(printerIoT)}}
                   className="w-6 h-6 text-red-500 cursor-pointer"
                 />
               </div>
@@ -274,6 +309,7 @@ export const AdminPrinters = () => {
         setShowModal={setShowModal}
         printerIoT={printerIoT}
         setPrinterIoT={setPrinterIoT}
+        refetchHandler={refetchHandler}
       />
     </div>
   );
