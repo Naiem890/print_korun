@@ -13,7 +13,7 @@ router.post("/", validateToken, checkAdminRole, async (req, res) => {
       ip,
       status,
       colorPrintPrice,
-      bAndWPrintPrice,
+      BWPrintPrice,
     } = req.body;
 
     // Create a new printer instance
@@ -24,7 +24,7 @@ router.post("/", validateToken, checkAdminRole, async (req, res) => {
       ip,
       status,
       colorPrintPrice,
-      bAndWPrintPrice,
+      BWPrintPrice,
     });
 
     // Save the printer to the database
@@ -43,12 +43,18 @@ router.post("/", validateToken, checkAdminRole, async (req, res) => {
 router.get("/:printerIoTId", validateToken, async (req, res) => {
   try {
     const { printerIoTId } = req.params;
+    const { role } = req.user;
 
     if (printerIoTId && printerIoTId.toLowerCase() !== "all") {
-      const result = await PrinterIoT.findById(printerIoTId);
+      let result = await PrinterIoT.findById(printerIoTId);
 
       if (!result) {
         return res.status(404).json({ error: "Printer not found" });
+      }
+
+      if (role !== "admin") {
+        result = result.toObject();
+        delete result.ip;
       }
 
       return res.status(200).json({
@@ -58,7 +64,16 @@ router.get("/:printerIoTId", validateToken, async (req, res) => {
       });
     }
 
-    const result = await PrinterIoT.find();
+    let result = await PrinterIoT.find();
+
+    if (role !== "admin") {
+      result = result.map((doc) => {
+        const object = doc.toObject();
+        delete object.ip;
+        return object;
+      });
+    }
+
     res.status(200).json({
       printerIoTs: result,
       statusEnum: PrinterIoT.schema.path("status").enumValues,
@@ -69,6 +84,7 @@ router.get("/:printerIoTId", validateToken, async (req, res) => {
     res.status(500).json({ error: "Failed to retrieve printer(s)" });
   }
 });
+
 // Update an existing printer
 router.put(
   "/:printerIoTId",
@@ -83,30 +99,35 @@ router.put(
         googleMapLink,
         ip,
         colorPrintPrice,
-        bAndWPrintPrice,
+        BWPrintPrice,
       } = req.body;
+
       // Find the printer by ID
       const existingPrinterIoT = await PrinterIoT.findById(printerIoTId);
-      console.log(existingPrinterIoT, "Shovo");
+
       if (!existingPrinterIoT) {
         return res.status(404).json({ error: "Printer not found" });
       }
 
+      // Create an object with fields that are present in the request body
+      const updateFields = {
+        name,
+        location,
+        googleMapLink,
+        ip,
+        colorPrintPrice,
+        BWPrintPrice,
+      };
+
+      // Filter out undefined values (fields that were not provided in the request body)
+      const filteredUpdateFields = Object.fromEntries(
+        Object.entries(updateFields).filter(
+          ([key, value]) => value !== undefined
+        )
+      );
+
       // Update the printer details
-      existingPrinterIoT.name ? (existingPrinterIoT.name = name) : null;
-      existingPrinterIoT.location
-        ? (existingPrinterIoT.location = location)
-        : null;
-      existingPrinterIoT.googleMapLink
-        ? (existingPrinterIoT.googleMapLink = googleMapLink)
-        : null;
-      existingPrinterIoT.ip ? (existingPrinterIoT.ip = ip) : null;
-      existingPrinterIoT.colorPrintPrice
-        ? (existingPrinterIoT.colorPrintPrice = colorPrintPrice)
-        : null;
-      existingPrinterIoT.BWPrintPrice
-        ? (existingPrinterIoT.BWPrintPrice = bAndWPrintPrice)
-        : null;
+      Object.assign(existingPrinterIoT, filteredUpdateFields);
 
       // Save the updated printer to the database
       const updatedPrinterIoT = await existingPrinterIoT.save();

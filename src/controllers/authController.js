@@ -45,10 +45,10 @@ const sendOTP = async (userId) => {
       createdAt: new Date(),
     };
 
-    const message = `Your Print Korun App verification OTP is ${otp}`;
+    const message = `Your Sohoz Print App verification OTP is ${otp}`;
 
     // Send the OTP to the user's phone number
-    // await sendSMS(message, phoneNumber);
+    await sendSMS(message, phoneNumber);
     console.log("sending...", message, phoneNumber);
 
     // Return the generated OTP for testing or logging purposes
@@ -209,10 +209,14 @@ router.post("/login", async (req, res) => {
 
   delete user.password;
 
-  // eslint-disable-next-line no-undef
-  const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, {
-    expiresIn: "24h",
-  });
+  const token = jwt.sign(
+    { role: "user", _id: user._id },
+    // eslint-disable-next-line no-undef
+    process.env.JWT_SECRET,
+    {
+      expiresIn: "24h",
+    }
+  );
 
   res.json({ token, user });
 });
