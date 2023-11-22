@@ -164,7 +164,7 @@ export const EditPrinterModal = ({
               name="colorPrintPrice"
               placeholder="10"
               value={colorPrintPrice}
-              onChange={(e) => setColorPrintPrice(e.target.value)}
+              onChange={(e) => setColorPrintPrice(+e.target.value)}
               min={0}
               className={`${fixedInputClass} mt-2`}
             />
@@ -178,7 +178,7 @@ export const EditPrinterModal = ({
               name="BWPrintPrice"
               placeholder="10"
               value={BWPrintPrice}
-              onChange={(e) => setBWPrintPrice(e.target.value)}
+              onChange={(e) => setBWPrintPrice(+e.target.value)}
               min={0}
               className={`${fixedInputClass} mt-2`}
             />
@@ -190,7 +190,7 @@ export const EditPrinterModal = ({
         </p>
         <div className="mt-4 col-span-full flex justify-end gap-6">
           <button type="submit" className={`${fixedButtonClass} w-auto`}>
-            Edit Printer
+            Update Printer
           </button>
         </div>
       </form>

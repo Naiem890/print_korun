@@ -14,10 +14,9 @@ import { toast } from "react-hot-toast";
 import Swal from "sweetalert2";
 import { fixedButtonClass, fixedInputClass } from "../../Utils/constant";
 import { Axios } from "../../api/api";
-import { EditPrinterModal } from "./EditPrinterModal";
-import { AddPrinterModal } from "./AddPrinterModal";
+import { Link } from "react-router-dom";
 
-export const AdminPrinters = () => {
+export default function PrinterIoTs() {
   const [printerIoTs, setPrinterIoTs] = useState([]);
   const [statusEnum, setStatusEnum] = useState([]);
   const [status, setStatus] = useState("");
@@ -26,7 +25,6 @@ export const AdminPrinters = () => {
   const [printerIoT, setPrinterIoT] = useState(null);
   const [refetch, setRefetch] = useState(false);
   const [showAddPrintIoTModal, setShowAddPrintIoTModal] = useState(false);
-  const [refetchHallIdHandler, setRefetchHallIdHandler] = useState(false);
 
   useEffect(() => {
     fetchPrinterIoT();
@@ -72,11 +70,11 @@ export const AdminPrinters = () => {
       cancelButtonColor: "#d33",
       confirmButtonText: "Yes, Delete!",
     });
-  
+
     if (result.isConfirmed) {
       try {
         const response = await Axios.delete(`/printerIoT/${printer._id}`);
-  
+
         if (response.status === 200) {
           toast.success(response.data.message);
           refetchHandler();
@@ -90,7 +88,6 @@ export const AdminPrinters = () => {
       }
     }
   };
-  
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -124,7 +121,9 @@ export const AdminPrinters = () => {
 
   return (
     <div className="lg:my-10 mb-10 px-5 lg:mr-12">
-      <h2 className="sm:text-3xl text-xl font-semibold"> Printers</h2>
+      <h2 className="sm:text-3xl text-xl font-semibold">
+        Choose printer near you!
+      </h2>
       <div className="divider"></div>
       <div className="flex justify-between items-center mb-6 gap-12">
         <div className="">
@@ -132,28 +131,18 @@ export const AdminPrinters = () => {
             Total Printers: {printerIoTs.length}
           </h3>
         </div>
-        <div className="flex gap-2 basis-1/2">
+        <div className="flex gap-2">
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            className={`${fixedInputClass} h-auto basis-1/4`}
+            className={`${fixedInputClass} h-auto max-w-[150px]`}
           >
             <option selected value="">
               Status
             </option>
             {statusEnum.map((status, i) => (
               <option key={i} value={status}>
-                <div className="flex items-baseline pt-4 gap-2 mt-auto">
-                  <div
-                    className={`bg-${getStatusColor(
-                      status
-                    )} rounded-full min-w-[12px] min-h-[12px]`}
-                    title={status}
-                  ></div>
-                  <p
-                    className={`text-${getStatusColor(status)}`}
-                  >{`${status}`}</p>
-                </div>
+                {status}
               </option>
             ))}
           </select>
@@ -162,22 +151,15 @@ export const AdminPrinters = () => {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search Printer Id, Name, Location"
-            className={`${fixedInputClass} h-auto basis-2/4`}
+            className={`${fixedInputClass} h-auto min-w-[300px]`}
           />
-          <button
-            onClick={() => {
-              handleAddAccount();
-            }}
-            className={`${fixedButtonClass} btn-sm h-auto basis-40 ml-2`}
-          >
-            <PlusIcon className="w-4 h-4" /> Add Printer
-          </button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {printerIoTs.filter(handlePrinterFilter).map((printerIoT) => (
-          <div
+          <Link
+            to={`/dashboard/place-order/${printerIoT._id}`}
             key={printerIoT._id}
             className="bg-white rounded-xl shadow-sm border hover:shadow-xl transition-all cursor-pointer mb-4 relative group px-8 py-6 flex flex-col"
           >
@@ -185,38 +167,9 @@ export const AdminPrinters = () => {
               <h1 className="text-lg leading-tight font-semibold text-gray-900">
                 {printerIoT.name}
               </h1>
-              <div className="flex gap-4 items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <PencilIcon
-                  onClick={() => {
-                    handleEditPrinter(printerIoT);
-                  }}
-                  className="w-6 h-6 text-blue-500 cursor-pointer"
-                />
-                <TrashIcon
-                  onClick={()=>{handleDeletePrinter(printerIoT)}}
-                  className="w-6 h-6 text-red-500 cursor-pointer"
-                />
-              </div>
             </div>
             <div className="divider mt-3 opacity-40"></div>
             <div className="">
-              <InfoBlock
-                icon={
-                  <PrinterIcon className="w-6 h-6 min-w-[24px] min-h-[24px]" />
-                }
-                title={"Printer Id"}
-                value={
-                  <p
-                    onClick={() => {
-                      navigator.clipboard.writeText(printerIoT._id);
-                      toast.success("Printer ID Copied");
-                    }}
-                  >
-                    {" "}
-                    {printerIoT._id} #
-                  </p>
-                }
-              />
               <InfoBlock
                 icon={
                   <MapPinIcon className="w-6 h-6 min-w-[24px] min-h-[24px]" />
@@ -264,7 +217,7 @@ export const AdminPrinters = () => {
               ) : (
                 ""
               )}
-              <div className="flex justify-between">
+              <div className="flex justify-between text-emerald-600 font-bold">
                 <InfoBlock
                   icon={
                     <CurrencyBangladeshiIcon className="w-6 h-6 min-w-[24px] min-h-[24px]" />
@@ -293,29 +246,14 @@ export const AdminPrinters = () => {
                 className={`text-${getStatusColor(printerIoT.status)}`}
               >{`${printerIoT.status}`}</p>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
-
-      <AddPrinterModal
-        showAddPrintIoTModal={showAddPrintIoTModal}
-        setShowAddPrintIoTModal={setShowAddPrintIoTModal}
-        refetchHandler={refetchHandler}
-        setRefetchHallIdHandler={setRefetchHallIdHandler}
-        refetchHallIdHandler={refetchHallIdHandler}
-      />
-      <EditPrinterModal
-        showModal={showModal}
-        setShowModal={setShowModal}
-        printerIoT={printerIoT}
-        setPrinterIoT={setPrinterIoT}
-        refetchHandler={refetchHandler}
-      />
     </div>
   );
-};
+}
 
-const InfoBlock = ({ icon, title, value }) => {
+export function InfoBlock({ icon, title, value }) {
   return (
     <div className="flex flex-col justify-center mb-3" title={title}>
       <div className="flex gap-2 opacity-70">
@@ -325,4 +263,4 @@ const InfoBlock = ({ icon, title, value }) => {
       {/* <p className="text-gray-500 text-sm">{value}</p> */}
     </div>
   );
-};
+}

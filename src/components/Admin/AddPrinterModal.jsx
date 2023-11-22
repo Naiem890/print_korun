@@ -11,11 +11,9 @@ import {
 import { XCircleIcon, ArrowLongRightIcon } from "@heroicons/react/24/outline";
 
 export const AddPrinterModal = ({
-  showAddStudentModal,
-  setShowAddStudentModal,
+  showAddPrintIoTModal,
+  setShowAddPrintIoTModal,
   refetchHandler,
-  setRefetchHallIdHandler,
-  refetchHallIdHandler,
 }) => {
   const handleAddPrinter = async (e) => {
     e.preventDefault();
@@ -43,12 +41,10 @@ export const AddPrinterModal = ({
       toast.success(response.data.message);
 
       // Close the modal
-      // setShowAddStudentModal(false);
+      setShowAddPrintIoTModal(false);
 
       // You might want to trigger a refetch or update state here if needed
-      // refetchHandler();
-      // setRefetchHallIdHandler();
-      // refetchHallIdHandler();
+      refetchHandler();
     } catch (error) {
       // Show error toast
       toast.error(error.response.data.error);
@@ -57,13 +53,13 @@ export const AddPrinterModal = ({
 
   return (
     <Modal
-      setShowAddStudentModal={setShowAddStudentModal}
-      className={`${showAddStudentModal ? "" : "hidden"}`}
+      setShowAddPrintIoTModal={setShowAddPrintIoTModal}
+      className={`${showAddPrintIoTModal ? "" : "hidden"}`}
     >
       <button
         type="button"
         onClick={() => {
-          setShowAddStudentModal(false);
+          setShowAddPrintIoTModal(false);
         }}
         className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 cursor-pointer"
       >

@@ -13,7 +13,7 @@ export default {
       "2xl": "1536px",
     },
     fontFamily: {
-      sans: ["Helvetica", "ui-sans-serif", "system-ui"],
+      sans: ["Poppins", "ui-sans-serif", "system-ui"],
       notoSerifBangla: ["Noto Serif Bengali", "serif"],
     },
   },
