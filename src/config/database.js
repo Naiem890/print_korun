@@ -3,7 +3,7 @@ mongoose.set("strictQuery", true);
 
 async function dbConnect() {
   const { DB_URI_CLOUD, DB_URI_LOCAL, NODE_ENV } = process.env;
-  const dbUrl = NODE_ENV === "production" ? DB_URI_CLOUD : DB_URI_LOCAL;
+  const dbUrl = NODE_ENV === "development" ?  DB_URI_LOCAL : DB_URI_CLOUD;
 
   try {
     await mongoose.connect(dbUrl, {
