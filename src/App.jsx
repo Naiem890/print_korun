@@ -59,7 +59,7 @@ function App() {
           }
         >
           <Route index element={<AdminPrinterIoTs />} />
-          <Route path="orders" element={<AdminOrders />} />
+          <Route path="orders" element={<Orders />} />
         </Route>
       </Routes>
     </>

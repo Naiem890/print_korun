@@ -25,7 +25,7 @@ export default function Profile() {
   };
 
   return (
-    <div className="mb-10 lg:my-10 px-5 lg:mr-12">
+    <div className="mb-10 lg:my-4 px-5 lg:mr-12">
       <h2 className="sm:text-3xl text-xl font-semibold">Update Profile Info</h2>
       <div className="divider"></div>
       <form onSubmit={handleUpdateProfile} className="xl:w-1/2 ">

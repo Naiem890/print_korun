@@ -1,20 +1,22 @@
 import {
   ArrowPathIcon,
   PencilIcon,
-  PlusIcon,
   TrashIcon,
   GlobeAltIcon,
   MapPinIcon,
   CurrencyBangladeshiIcon,
   MapIcon,
   PrinterIcon,
+  MinusIcon,
+  PlusIcon,
 } from "@heroicons/react/24/outline";
 import React, { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import Swal from "sweetalert2";
 import { fixedButtonClass, fixedInputClass } from "../../Utils/constant";
 import { Axios } from "../../api/api";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { truncateAndAddEllipsis } from "../../Utils/helper";
 
 export default function PrinterIoTs() {
   const [printerIoTs, setPrinterIoTs] = useState([]);
@@ -25,6 +27,8 @@ export default function PrinterIoTs() {
   const [printerIoT, setPrinterIoT] = useState(null);
   const [refetch, setRefetch] = useState(false);
   const [showAddPrintIoTModal, setShowAddPrintIoTModal] = useState(false);
+  const [showAdditionalInfo, setShowAdditionalInfo] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchPrinterIoT();
@@ -32,7 +36,14 @@ export default function PrinterIoTs() {
     async function fetchPrinterIoT() {
       const result = await Axios.get("/printerIoT/all");
       console.log("printers", result.data);
-      setPrinterIoTs(result.data.printerIoTs);
+      const modifiedPrinterIoTs = result.data.printerIoTs.map((printerIoT) => {
+        return {
+          ...printerIoT,
+          bgColor: `bg-${getStatusColor(printerIoT.status)}`, // Updated this line
+          textColor: `text-${getStatusColor(printerIoT.status)}`, // Updated this line
+        };
+      });
+      setPrinterIoTs(modifiedPrinterIoTs);
       setStatusEnum(result.data.statusEnum);
     }
   }, [refetch]);
@@ -90,9 +101,11 @@ export default function PrinterIoTs() {
   };
 
   const getStatusColor = (status) => {
+    console.log("Status:", status);
     switch (status) {
       case "ONLINE":
         return "green-500";
+
       case "OFFLINE":
         return "red-500";
       case "ACTIVE":
@@ -120,7 +133,7 @@ export default function PrinterIoTs() {
   };
 
   return (
-    <div className="lg:my-10 mb-10 px-5 lg:mr-12">
+    <div className="lg:my-4 mb-10 px-5 lg:mr-12">
       <h2 className="sm:text-3xl text-xl font-semibold">
         Choose printer near you!
       </h2>
@@ -131,7 +144,23 @@ export default function PrinterIoTs() {
             Total Printers: {printerIoTs.length}
           </h3>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          {/* Toggle button for detailed view */}
+          <div className="min-w-[180px]">
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showAdditionalInfo}
+                onChange={() => setShowAdditionalInfo((prev) => !prev)}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300  rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+              <span className="ms-3 text-sm font-medium text-gray-900">
+                {showAdditionalInfo ? "Collapse Details" : "Expand Details"}
+              </span>
+            </label>
+          </div>
+
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
@@ -158,18 +187,33 @@ export default function PrinterIoTs() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {printerIoTs.filter(handlePrinterFilter).map((printerIoT) => (
-          <Link
-            to={`/dashboard/place-order/${printerIoT._id}`}
+          <div
+            onClick={() => navigate(`/dashboard/place-order/${printerIoT._id}`)}
             key={printerIoT._id}
             className="bg-white rounded-xl shadow-sm border hover:shadow-xl transition-all cursor-pointer mb-4 relative group px-8 py-6 flex flex-col"
           >
-            <div className="uppercase tracking-wide text-sm text-indigo-500 font-semibold flex justify-between items-baseline gap-4">
-              <h1 className="text-lg leading-tight font-semibold text-gray-900">
-                {printerIoT.name}
+            <div className="uppercase tracking-wide text-sm text-indigo-500 font-semibold flex items-center gap-4">
+              <div className="indicator">
+                <span
+                  style={{ color: `!${printerIoT.bgColor.split("-")[1]}` }}
+                  title={printerIoT.status}
+                  className={`indicator-item indicator-bottom badge-warning right-2 bottom-2 badge-xs rounded-full`}
+                ></span>
+                <div className="grid w-12 h-12 bg-emerald-50 rounded-full place-items-center">
+                  <PrinterIcon className="w-6 h-6 text-emerald-500" />
+                </div>
+              </div>
+              <h1
+                className="font-semibold text-gray-900"
+                title={printerIoT.location}
+              >
+                {truncateAndAddEllipsis(
+                  showAdditionalInfo ? printerIoT.name : printerIoT.location
+                )}
               </h1>
             </div>
-            <div className="divider mt-3 opacity-40"></div>
-            <div className="">
+            <div className="divider my-3 opacity-40"></div>
+            <div className={`${showAdditionalInfo ? "" : "hidden"}`}>
               <InfoBlock
                 icon={
                   <MapPinIcon className="w-6 h-6 min-w-[24px] min-h-[24px]" />
@@ -217,36 +261,32 @@ export default function PrinterIoTs() {
               ) : (
                 ""
               )}
-              <div className="flex justify-between text-emerald-600 font-bold">
-                <InfoBlock
-                  icon={
-                    <CurrencyBangladeshiIcon className="w-6 h-6 min-w-[24px] min-h-[24px]" />
-                  }
-                  title={"Color Print Price"}
-                  value={`Color: ${printerIoT.colorPrintPrice} BDT`}
-                />
-                <InfoBlock
-                  icon={
-                    <CurrencyBangladeshiIcon className="w-6 h-6 min-w-[24px] min-h-[24px]" />
-                  }
-                  title={"Black & White Print Price"}
-                  value={`B&W: ${printerIoT.BWPrintPrice} BDT`}
-                />
-              </div>
+            </div>
+            <div className="flex justify-between text-emerald-600 font-bold mt-auto pt-2">
+              <InfoBlock
+                icon={
+                  <CurrencyBangladeshiIcon className="w-6 h-6 min-w-[24px] min-h-[24px]" />
+                }
+                title={"Color Print Price"}
+                value={`Color: ${printerIoT.colorPrintPrice} BDT`}
+              />
+              <InfoBlock
+                icon={
+                  <CurrencyBangladeshiIcon className="w-6 h-6 min-w-[24px] min-h-[24px]" />
+                }
+                title={"Black & White Print Price"}
+                value={`B&W: ${printerIoT.BWPrintPrice} BDT`}
+              />
             </div>
 
-            <div className="flex items-baseline pt-4 gap-2 mt-auto">
+            {/* <div className="flex items-baseline gap-2 mt-auto">
               <div
-                className={`bg-${getStatusColor(
-                  printerIoT.status
-                )} rounded-full min-w-[12px] min-h-[12px]`}
+                className={`${printerIoT.bgColor} block rounded-full min-w-[24px] min-h-[24px]`}
                 title={printerIoT.status}
               ></div>
-              <p
-                className={`text-${getStatusColor(printerIoT.status)}`}
-              >{`${printerIoT.status}`}</p>
-            </div>
-          </Link>
+              <p className={printerIoT.textColor}>{`${printerIoT.status}`}</p>
+            </div> */}
+          </div>
         ))}
       </div>
     </div>

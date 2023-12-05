@@ -121,7 +121,7 @@ export const AdminPrinterIoTs = () => {
   };
 
   return (
-    <div className="lg:my-10 mb-10 px-5 lg:mr-12">
+    <div className="lg:my-4 mb-10 px-5 lg:mr-12">
       <h2 className="sm:text-3xl text-xl font-semibold"> Printers</h2>
       <div className="divider"></div>
       <div className="flex justify-between items-center mb-6 gap-12">

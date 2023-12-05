@@ -25,7 +25,7 @@ export default function PlaceOrder() {
   const [scheduleOption, setScheduleOption] = useState("Now");
   const [isPriority, setIsPriority] = useState(false);
   const [numberOfCopies, setNumberOfCopies] = useState(1);
-  const [selectedPrintType, setSelectedPrintType] = useState("color");
+  const [selectedPrintType, setSelectedPrintType] = useState();
   const [printCost, setPrintCost] = useState(0);
   const [highPriorityCost, setHighPriorityCost] = useState(0);
   const [serviceCharge, setServiceCharge] = useState(0);
@@ -37,6 +37,7 @@ export default function PlaceOrder() {
     async function fetchPrinterIoT() {
       const result = await Axios.get(`/printerIoT/${printerIoTId}`);
       console.log("printerIoT", result.data);
+      // setSelectedPrintType(result.data?.printerIoTs?.colorPrintPrice ? "color" : "blacknwhite");
       setPrinterIoT(result.data.printerIoTs);
     }
     fetchPrinterIoT();
@@ -100,6 +101,12 @@ export default function PlaceOrder() {
 
     if (!selectedFile) {
       setFileUploadError(true);
+      toast.error("Please select a file");
+      return;
+    }
+
+    if (!selectedPrintType) {
+      toast.error("Please select a print type");
       return;
     }
 
@@ -139,6 +146,11 @@ export default function PlaceOrder() {
       formData.append("copies", numberOfCopies);
       formData.append("totalCost", totalCost);
 
+      toast("Uploading file... Please wait a moment!", {
+        theme: "colored",
+        icon: "⌛",
+      });
+
       // Make a POST request to create a new order with payment and file information
       const orderResponse = await Axios.post("/order", formData, {
         headers: {
@@ -152,7 +164,7 @@ export default function PlaceOrder() {
       // Perform any additional actions based on the orderDetails if needed
 
       // Show a success message
-      toast.success("Payment and Order creation successful!", {
+      toast.success("Payment and Order placed successfully!", {
         theme: "colored",
       });
 
@@ -160,8 +172,8 @@ export default function PlaceOrder() {
       setShowPaymentModal(false);
     } catch (error) {
       // Handle errors, show an error message, or log the error
-      console.error("Payment and Order creation error:", error);
-      toast.error("Payment and Order creation failed. Please try again.", {
+      console.error("Error in Payment and Order placement:", error);
+      toast.error("Payment and Order placement failed. Please try again.", {
         theme: "colored",
       });
     }
@@ -169,7 +181,7 @@ export default function PlaceOrder() {
 
   return (
     <>
-      <div className="lg:my-10 mb-10 px-5 lg:mr-12">
+      <div className="lg:my-4 mb-10 px-5 lg:mr-12">
         <h2 className="sm:text-3xl text-xl font-semibold">Place Order!</h2>
         <div className="divider"></div>
         {/* <div className="flex justify-between items-center mb-6 gap-12">
@@ -182,7 +194,7 @@ export default function PlaceOrder() {
         <div>
           <form
             onSubmit={handlePlaceOrder}
-            className="grid grid-cols-2 gap-x-12 mb-6 pt-4 w-[90%]"
+            className="grid grid-cols-2 gap-x-12 mb-6 pt-4"
           >
             <div>
               <div className="mb-5">
@@ -335,7 +347,7 @@ export default function PlaceOrder() {
 
                   <div className="hover:bg-gray-50 flex items-center justify-between px-4 py-2 border-2 rounded-lg cursor-pointer border-gray-200 group peer-checked:border-emerald-500 peer-checked:bg-emerald-500 text-gray-700 peer-checked:text-white">
                     <h2 className="font-medium ">
-                      Black & White - {printerIoT.BWPrintPrice} BDT/Page
+                      B & W - {printerIoT.BWPrintPrice} BDT/Page
                     </h2>
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -399,11 +411,10 @@ export default function PlaceOrder() {
                   <select
                     onChange={(e) => setIsPriority(e.target.value === "Yes")}
                     className={`${fixedInputClass}`}
+                    defaultValue="No"
                   >
                     <option value="Yes">Yes</option>
-                    <option selected value="No">
-                      No
-                    </option>
+                    <option value="No">No</option>
                   </select>
                 </div>
               </div>
