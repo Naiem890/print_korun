@@ -4,6 +4,7 @@ const cors = require("cors");
 const logger = require("morgan");
 const dbConnect = require("./config/database");
 const apiRoutes = require("./routes/index");
+const { sendSMS } = require("./utils/helper");
 // load env variables
 require("dotenv").config();
 
@@ -29,7 +30,24 @@ app.get("/", (req, res) => {
 // Api routes
 app.use("/api", apiRoutes);
 
+// test sms route
+app.get("/sms/:phoneNumber?", async (req, res) => {
+  const { phoneNumber } = req.params;
+
+  try {
+    const response = await sendSMS(
+      "SMS request received successfully!",
+      phoneNumber || "01790732717"
+    );
+    res.json(response.data);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 // Error handling middleware
+// eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ error: "Internal Server Error" });

@@ -2,6 +2,7 @@ const express = require("express");
 const multer = require("multer");
 const Order = require("../models/order");
 const { validateToken } = require("../middlewares/validateToken");
+const { Types } = require("mongoose");
 const router = express.Router();
 
 // Multer setup
@@ -62,20 +63,90 @@ router.get("/:orderId?", validateToken, async (req, res) => {
     const userId = req.user._id;
     const role = req.user.role;
 
+    let pipeline = [];
+
     if (orderId) {
       // If orderId is provided, find the specific order by ID
-      const order = await Order.findById(orderId);
-
-      if (!order) {
-        return res.status(404).json({ error: "Order not found" });
-      }
-
-      return res.status(200).json(order);
-    } else {
-      // If no orderId is provided, fetch all orders
-      const orders = await Order.find();
-      return res.status(200).json(orders);
+      pipeline.push({ $match: { _id: new Types.ObjectId(orderId) } });
     }
+
+    if (role === "admin") {
+      // If the user is an admin, populate the user details
+      pipeline.push({
+        $lookup: {
+          from: "users", // Replace with the actual collection name
+          localField: "userId",
+          foreignField: "_id",
+          as: "user",
+        },
+      });
+      pipeline.push({
+        $project: {
+          "user.password": 0, // Exclude password field
+        },
+      });
+    } else {
+      // If the user is not an admin, only return orders belonging to the user
+      pipeline.push({ $match: { userId: new Types.ObjectId(userId) } });
+    }
+
+    // Stage to populate printers data for all users
+    pipeline.push({
+      $lookup: {
+        from: "printeriots", // Replace with the actual collection name
+        localField: "printerId",
+        foreignField: "_id",
+        as: "printer",
+      },
+    });
+
+    // Stage to project the necessary fields and exclude 'file'
+    pipeline.push({
+      $project: {
+        file: 0,
+        // Include other fields you need in the response
+      },
+    });
+
+    // populate payment details
+    pipeline.push({
+      $lookup: {
+        from: "payments",
+        localField: "paymentId",
+        foreignField: "_id",
+        as: "payment",
+      },
+    });
+
+    const orders = await Order.aggregate(pipeline);
+
+    if (!orders || (Array.isArray(orders) && orders.length === 0)) {
+      return res.status(404).json({ error: "Order(s) not found" });
+    }
+
+    return res.status(200).json(orders);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// download a print order file
+router.get("/:orderId/download", async (req, res) => {
+  try {
+    const orderId = req.params.orderId;
+
+    // Find the order by ID
+    const order = await Order.findById(orderId);
+
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    // Assuming the file is stored as a Buffer in the 'file' field of the order
+    const fileBuffer = order.file;
+
+    res.send(fileBuffer);
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: "Internal Server Error" });
