@@ -80,16 +80,10 @@ function sendMessage(message) {
 }
 
 // Example route to send a command to all Pi clients
-app.post("/send-command", (req, res) => {
-  const command = "ls -la";
-  // sendMessage({
-  //   action: "EXECUTE_COMMAND",
-  //   payload: command,
-  // });
-
+app.get("/send-command", (req, res) => {
   sendMessage({
     action: "PRINT_ORDER",
-    payload: { orderId: "664a0b89bc6525fe8891bf3f" },
+    payload: { orderId: "664a0dc9e3eccbf285ff79ed" },
   });
   res.send("Command sent to all connected devices.");
 });
