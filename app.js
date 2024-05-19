@@ -1,60 +1,121 @@
-const mqtt = require('mqtt');
+const { MongoClient, ObjectId } = require("mongodb");
+const { exec } = require("child_process");
+const fs = require("fs");
+const mqtt = require("mqtt");
 
-// MQTT Settings
-const MQTT_BROKER = 'mqtt://broker.hivemq.com';
-const MQTT_PORT = '1883';
-const MQTT_TOPIC = 'commands/pi';
+// Load environment variables
+require("dotenv").config();
 
-// Connect to the MQTT broker with additional options for reconnection
+let Order = null;
+let db = null;
+
+async function dbConnect() {
+  const dbUrl = process.env.DB_URI_CLOUD;
+
+  try {
+    const client = new MongoClient(dbUrl);
+    await client.connect();
+    console.log("Database connected");
+    db = client.db(); // Get the default database
+    Order = db.collection("orders"); // Get the collection
+  } catch (error) {
+    console.error("Error connecting to the database:", error);
+  }
+}
+
+dbConnect();
+
+// MQTT Settings and Connection
+const MQTT_BROKER = "mqtt://broker.hivemq.com";
+const MQTT_PORT = "1883";
+const MQTT_TOPIC = "sohoz_print";
+
 const client = mqtt.connect(MQTT_BROKER, {
   port: MQTT_PORT,
-  reconnectPeriod: 5000, // Try to reconnect every 5000 milliseconds (5 seconds)
-  connectTimeout: 30 * 1000 // 30-second connection timeout
+  reconnectPeriod: 5000,
+  connectTimeout: 30 * 1000,
 });
 
-// Event handler for successful connection
-client.on('connect', () => {
-  console.log('Connected to MQTT Broker at ' + MQTT_BROKER);
+client.on("connect", () => {
+  console.log("Connected to MQTT Broker at " + MQTT_BROKER);
   client.subscribe(MQTT_TOPIC, (err) => {
     if (err) {
-      console.error('Failed to subscribe to topic:', err);
+      console.error("Failed to subscribe to topic:", err);
     } else {
       console.log(`Subscribed to topic '${MQTT_TOPIC}'`);
     }
   });
 });
 
-// Event handler for receiving messages
-client.on('message', (topic, message) => {
-  const command = message.toString();
-  console.log(`Received command: ${command}`);
+client.on("message", async (topic, message) => {
+  let data;
+  try {
+    data = JSON.parse(message.toString());
+  } catch (error) {
+    console.error("Error parsing message:", error);
+    return;
+  }
 
-  const { exec } = require('child_process');
-  exec(command, (error, stdout, stderr) => {
-    if (error) {
-      console.error(`exec error: ${error}`);
-    }
-    if (stdout) {
-      console.log(`stdout: ${stdout}`);
-    }
-    if (stderr) {
-      console.error(`stderr: ${stderr}`);
-    }
-    console.log("Command executed successfully");
-  });
+  console.log(`Received message: ${message}`);
+
+  switch (data.action) {
+    case "PRINT_ORDER":
+      await handlePrintOrder(data.payload.orderId);
+      break;
+    case "EXECUTE_COMMAND":
+      exec(data.payload, (error, stdout, stderr) => {
+        if (error) {
+          console.error(`error: ${error}`);
+          return;
+        }
+        console.log(`stdout: ${stdout}`);
+        console.error(`stderr: ${stderr}`);
+
+        console.log("--------finished---------");
+      });
+      break;
+    default:
+      console.log("Unknown action received");
+  }
 });
 
-// Error handling for the client
-client.on('error', (err) => {
-  console.error('MQTT client error:', err);
+async function handlePrintOrder(orderId) {
+  try {
+    console.log("orderId", orderId);
+    const _id = new ObjectId(orderId); // Use ObjectId from MongoDB driver
+    const order = await Order.findOne({ _id: _id });
+
+    if (order && order.file) {
+      console.log("Order found, processing file...");
+
+      // Convert MongoDB Binary to Buffer
+      const fileBuffer = order.file.buffer;
+
+      // Save file to temporary location
+      fs.writeFileSync("/tmp/printfile", fileBuffer);
+      console.log("File written to /tmp/printfile");
+
+      // Print the file - adjust command according to your printer setup
+      exec("lp /tmp/printfile", (error, stdout, stderr) => {
+        if (error) {
+          console.error(`Printing error: ${error}`);
+          return;
+        }
+        console.log(`Printing stdout: ${stdout}`);
+        console.error(`Printing stderr: ${stderr}`);
+      });
+    } else {
+      console.log("Order not found or file missing");
+    }
+  } catch (error) {
+    console.error("Error retrieving order:", error);
+  }
+}
+
+client.on("error", (err) => {
+  console.error("MQTT client error:", err);
 });
 
-// Reconnection handling
-client.on('reconnect', () => {
-  console.log('Reconnecting to MQTT Broker...');
-});
-
-// Close handling
-client.on('close', () => {
-  console.log('Disconnected from MQTT Broker');
+client.on("close", () => {
+  console.log("Disconnected from MQTT Broker");
 });
