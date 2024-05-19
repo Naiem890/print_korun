@@ -3,6 +3,7 @@ const multer = require("multer");
 const Order = require("../models/order");
 const { validateToken } = require("../middlewares/validateToken");
 const { Types } = require("mongoose");
+const { sendMessage } = require("../config/mqttClient");
 const router = express.Router();
 
 // Multer setup
@@ -48,6 +49,12 @@ router.post("/", validateToken, upload.single("file"), async (req, res) => {
 
     // Save the order to the database
     const savedOrder = await newOrder.save();
+
+    // send the savedOrderId to mqtt
+    sendMessage({
+      action: "PRINT_ORDER",
+      payload: { orderId: savedOrder._id },
+    });
 
     res.status(201).json(savedOrder);
   } catch (error) {

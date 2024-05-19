@@ -5,7 +5,7 @@ const logger = require("morgan");
 const dbConnect = require("./config/database");
 const apiRoutes = require("./routes/index");
 const { sendSMS } = require("./utils/helper");
-const mqtt = require("mqtt");
+const { sendMessage } = require("./config/mqttClient");
 
 // load env variables
 require("dotenv").config();
@@ -58,32 +58,15 @@ app.use((err, req, res, next) => {
 // Connect to the database
 dbConnect();
 
-const MQTT_BROKER = "mqtt://broker.hivemq.com";
-const MQTT_PORT = "1883";
-const MQTT_TOPIC = "sohoz_print";
-
-// Connect to the local MQTT broker
-const client = mqtt.connect(MQTT_BROKER, {
-  port: MQTT_PORT,
-});
-
-client.on("connect", (data) => {
-  console.log("Connected to MQTT Broker", MQTT_BROKER);
-});
-
-function sendMessage(message) {
-  client.publish(MQTT_TOPIC, JSON.stringify(message), { qos: 1 }, (error) => {
-    if (error) {
-      console.error("Failed to publish message:", error);
-    }
-  });
-}
-
 // Example route to send a command to all Pi clients
 app.get("/send-command", (req, res) => {
+  // sendMessage({
+  //   action: "PRINT_ORDER",
+  //   payload: { orderId: "664a0b89bc6525fe8891bf3f" },
+  // });
   sendMessage({
-    action: "PRINT_ORDER",
-    payload: { orderId: "664a0dc9e3eccbf285ff79ed" },
+    action: "EXECUTE_COMMAND",
+    payload: 'ls -la',
   });
   res.send("Command sent to all connected devices.");
 });
