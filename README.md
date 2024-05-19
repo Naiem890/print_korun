@@ -3,14 +3,14 @@
 ### First clone the project and change to project directory
 
 ```
-git clone https://github.com/Naiem890/Smart-Printing-Shop.git
+git clone https://github.com/Naiem890/print_korun.git
 cd Smart-Printing-Shop
 ```
 
 ### Now to checkout to smart-printer-server branch
 
 ```
-git checkout smart-printer-server
+git checkout print_korun/backend
 ```
 
 ### Create a .env file in root of the project and copy below configuration
