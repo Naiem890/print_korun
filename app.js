@@ -68,8 +68,14 @@ client.on("message", async (topic, message) => {
           console.error(`error: ${error}`);
           return;
         }
-        console.log(`stdout: ${stdout}`);
-        console.error(`stderr: ${stderr}`);
+
+        if (stdout) {
+          console.log(`stdout: ${stdout}`);
+        }
+
+        if (stderr) {
+          console.error(`stderr: ${stderr}`);
+        }
 
         console.log("--------finished---------");
       });
@@ -95,15 +101,42 @@ async function handlePrintOrder(orderId) {
       fs.writeFileSync("/tmp/printfile", fileBuffer);
       console.log("File written to /tmp/printfile");
 
-      // Print the file - adjust command according to your printer setup
-      exec("lp /tmp/printfile", (error, stdout, stderr) => {
-        if (error) {
-          console.error(`Printing error: ${error}`);
-          return;
+      // Get the first available enabled printer
+      exec(
+        "lpstat -p | grep 'enabled' | awk '{print $2}' | head -n 1",
+        (error, stdout, stderr) => {
+          if (error) {
+            console.error(`Error retrieving printers: ${error}`);
+            return;
+          }
+
+          const firstEnabledPrinter = stdout.trim();
+          if (firstEnabledPrinter) {
+            console.log(`Using printer: ${firstEnabledPrinter}`);
+
+            // Determine color option
+            const colorOption =
+              order.printType === "BLACKNWHITE"
+                ? "ColorModel=Gray"
+                : "ColorModel=RGB";
+
+            // Print the file using the first available enabled printer
+            exec(
+              `lp -d ${firstEnabledPrinter} -o ${colorOption} /tmp/printfile`,
+              (error, stdout, stderr) => {
+                if (error) {
+                  console.error(`Printing error: ${error}`);
+                  return;
+                }
+                console.log(`Printing stdout: ${stdout}`);
+                console.error(`Printing stderr: ${stderr}`);
+              }
+            );
+          } else {
+            console.error("No enabled printers available.");
+          }
         }
-        console.log(`Printing stdout: ${stdout}`);
-        console.error(`Printing stderr: ${stderr}`);
-      });
+      );
     } else {
       console.log("Order not found or file missing");
     }
