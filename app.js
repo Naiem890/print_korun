@@ -58,26 +58,27 @@ client.on("message", async (topic, message) => {
 
   console.log(`Received message: ${message}`);
 
+  const { responseTopic } = data;
+
   switch (data.action) {
     case "PRINT_ORDER":
-      await handlePrintOrder(data.payload.orderId);
+      const result = await handlePrintOrder(data.payload.orderId);
+      if (responseTopic) {
+        client.publish(responseTopic, JSON.stringify({ result }));
+      }
       break;
     case "EXECUTE_COMMAND":
       exec(data.payload, (error, stdout, stderr) => {
+        const response = {};
         if (error) {
-          console.error(`error: ${error}`);
-          return;
+          response.error = error.message;
+        } else {
+          response.stdout = stdout;
+          response.stderr = stderr;
         }
-
-        if (stdout) {
-          console.log(`stdout: ${stdout}`);
+        if (responseTopic) {
+          client.publish(responseTopic, JSON.stringify(response));
         }
-
-        if (stderr) {
-          console.error(`stderr: ${stderr}`);
-        }
-
-        console.log("--------finished---------");
       });
       break;
     default:
@@ -107,7 +108,7 @@ async function handlePrintOrder(orderId) {
         (error, stdout, stderr) => {
           if (error) {
             console.error(`Error retrieving printers: ${error}`);
-            return;
+            return { error: error.message };
           }
 
           const firstEnabledPrinter = stdout.trim();
@@ -126,22 +127,26 @@ async function handlePrintOrder(orderId) {
               (error, stdout, stderr) => {
                 if (error) {
                   console.error(`Printing error: ${error}`);
-                  return;
+                  return { error: error.message };
                 }
                 console.log(`Printing stdout: ${stdout}`);
                 console.error(`Printing stderr: ${stderr}`);
+                return { stdout, stderr };
               }
             );
           } else {
             console.error("No enabled printers available.");
+            return { error: "No enabled printers available" };
           }
         }
       );
     } else {
       console.log("Order not found or file missing");
+      return { error: "Order not found or file missing" };
     }
   } catch (error) {
     console.error("Error retrieving order:", error);
+    return { error: error.message };
   }
 }
 
