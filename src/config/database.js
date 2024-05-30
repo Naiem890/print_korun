@@ -6,6 +6,8 @@ async function dbConnect() {
   const { DB_URI_CLOUD } = process.env;
   const dbUrl = DB_URI_CLOUD;
 
+  console.log("DB_URI_CLOUD", DB_URI_CLOUD)
+
   try {
     await mongoose.connect(dbUrl, {
       useUnifiedTopology: true,
