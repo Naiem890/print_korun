@@ -5,7 +5,7 @@ const logger = require("morgan");
 const dbConnect = require("./config/database");
 const apiRoutes = require("./routes/index");
 const { sendSMS } = require("./utils/helper");
-const { sendMessage } = require("./config/mqttClient");
+const { sendMessage, sendAndGetBackResponse } = require("./config/mqttClient");
 
 // load env variables
 require("dotenv").config();
@@ -60,11 +60,18 @@ dbConnect();
 
 // Example route to send a command to all Pi clients
 app.get("/send-command", (req, res) => {
-  sendMessage({
+  sendAndGetBackResponse({
     action: "EXECUTE_COMMAND",
-    payload: 'ls -la',
-  });
-  res.send("Command sent to all connected devices.");
+    payload: "cd / && node -v && npm -v",
+  })
+    .then((data) => {
+      console.log("data", data);
+      res.json(data);
+    })
+    .catch((error) => {
+      console.error("Error:", error);
+      res.status(500).send({ error: error.message });
+    });
 });
 
 app.listen(port, () => {
