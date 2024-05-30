@@ -60,10 +60,6 @@ dbConnect();
 
 // Example route to send a command to all Pi clients
 app.get("/send-command", (req, res) => {
-  // sendMessage({
-  //   action: "PRINT_ORDER",
-  //   payload: { orderId: "664a0b89bc6525fe8891bf3f" },
-  // });
   sendMessage({
     action: "EXECUTE_COMMAND",
     payload: 'ls -la',
