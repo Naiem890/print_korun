@@ -8,7 +8,7 @@ async function dbConnect() {
 
   try {
     await mongoose.connect(
-      "mongodb+srv://solaimannaiem890:F6F6tUC4jmzOhghq@cluster0.ucvcm05.mongodb.net/sohoz_print",
+      DB_URI_CLOUD,
       {
         useUnifiedTopology: true,
         useNewUrlParser: true,

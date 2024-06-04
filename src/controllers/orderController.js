@@ -8,7 +8,7 @@ const router = express.Router();
 
 // Multer setup
 const storage = multer.memoryStorage(); // Store files in memory as Buffer
-const upload = multer({ storage: storage });
+const upload = multer({ storage: storage, limits: { fileSize: 20 * 1024 * 1024 } });
 
 router.post("/", validateToken, upload.single("file"), async (req, res) => {
   console.log("req.user=>>>", req.user);
