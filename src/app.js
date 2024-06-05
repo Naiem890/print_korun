@@ -59,6 +59,15 @@ app.use((err, req, res, next) => {
 dbConnect();
 
 // Example route to send a command to all Pi clients
+app.get("/send-command/restart", (req, res) => {
+  sendMessage({
+    action: "EXECUTE_COMMAND",
+    payload: "pm2 restart all",
+  })
+  res.send({ message: "Command sent to all Pi clients"});
+});
+
+// Example route to send a command to all Pi clients
 app.get("/send-command", (req, res) => {
   sendAndGetBackResponse({
     action: "EXECUTE_COMMAND",
