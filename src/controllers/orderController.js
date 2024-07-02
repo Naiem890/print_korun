@@ -50,12 +50,27 @@ router.post("/", validateToken, upload.single("file"), async (req, res) => {
     // Save the order to the database
     const savedOrder = await newOrder.save();
 
-    // send the savedOrderId to mqtt
-    sendMessage({
-      action: "PRINT_ORDER",
-      payload: { orderId: savedOrder._id },
+    // get order with status IN_QUEUE and PRINTING
+    const queue = await Order.find({
+      printerId: printerId,
+      status: { $in: ["IN_QUEUE", "PRINTING"] },
     });
 
+    console.log("queue", queue);
+
+    if (queue.length === 0) {
+      // If the queue is empty, send the order to the printer
+      sendMessage({
+        action: "PRINT_ORDER",
+        payload: {
+          orderId: savedOrder._id,
+        },
+      })
+    } else {
+      // If the queue is not empty, update the status of the order to IN_QUEUE
+      savedOrder.status = "IN_QUEUE";
+      await savedOrder.save();
+    }
     res.status(201).json(savedOrder);
   } catch (error) {
     console.error(error);
@@ -125,7 +140,14 @@ router.get("/:orderId?", validateToken, async (req, res) => {
       },
     });
 
-    const orders = await Order.aggregate(pipeline);
+    // Sort by createdAt in descending order
+    pipeline.push({
+      $sort: { createdAt: -1 },
+    });
+
+    console.log("pipeline", pipeline);
+
+    const orders = await Order.aggregate(pipeline).allowDiskUse(true);
 
     if (!orders || (Array.isArray(orders) && orders.length === 0)) {
       return res.status(404).json({ error: "Order(s) not found" });

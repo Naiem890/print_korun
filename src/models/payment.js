@@ -9,7 +9,7 @@ const paymentSchema = new mongoose.Schema(
       required: true,
       enum: ["PENDING", "RECEIVED", "DECLINED"],
       set: (value) => value.toUpperCase(),
-      default: "PENDING",
+      default: "RECEIVED",
     },
   },
   {

@@ -2,6 +2,8 @@ const router = require("express").Router();
 const { checkAdminRole } = require("../middlewares/checkAdminRole");
 const { validateToken } = require("../middlewares/validateToken");
 const PrinterIoT = require("../models/printerIoT");
+const Order = require("../models/order");
+const { Types } = require("mongoose");
 
 // Create a new printer
 router.post("/", validateToken, checkAdminRole, async (req, res) => {
@@ -40,50 +42,62 @@ router.post("/", validateToken, checkAdminRole, async (req, res) => {
   }
 });
 
-router.get("/:printerIoTId", validateToken, async (req, res) => {
+router.get("/:printerIoTId?", validateToken, async (req, res) => {
   try {
     const { printerIoTId } = req.params;
     const { role } = req.user;
 
+    let pipeline = [];
+
     if (printerIoTId && printerIoTId.toLowerCase() !== "all") {
-      let result = await PrinterIoT.findById(printerIoTId);
+      pipeline.push({ $match: { _id: new Types.ObjectId(printerIoTId) } });
+    }
 
-      if (!result) {
-        return res.status(404).json({ error: "Printer not found" });
-      }
+    pipeline.push({
+      $lookup: {
+        from: "orders",
+        localField: "_id",
+        foreignField: "printerId",
+        as: "orderQueue",
+        pipeline: [
+          { $match: { status: { $in: ["IN_QUEUE", "PRINTING"] } } },
+          { $project: { file: 0 } },
+        ],
+      },
+    });
 
-      if (role !== "admin") {
-        result = result.toObject();
-        delete result.ip;
-      }
-
-      return res.status(200).json({
-        printerIoTs: result,
-        statusEnum: PrinterIoT.schema.path("status").enumValues,
-        message: "Printer retrieved successfully",
+    if (role !== "admin") {
+      pipeline.push({
+        $project: {
+          ip: 0,
+          "orders.file": 0,
+        },
+      });
+    } else {
+      pipeline.push({
+        $project: {
+          "orders.file": 0,
+        },
       });
     }
 
-    let result = await PrinterIoT.find();
+    const result = await PrinterIoT.aggregate(pipeline);
 
-    if (role !== "admin") {
-      result = result.map((doc) => {
-        const object = doc.toObject();
-        delete object.ip;
-        return object;
-      });
+    if (!result || (Array.isArray(result) && result.length === 0)) {
+      return res.status(404).json({ error: "Printer(s) not found" });
     }
 
     res.status(200).json({
-      printerIoTs: result,
+      printerIoTs: result.length === 1 ? result[0] : result,
       statusEnum: PrinterIoT.schema.path("status").enumValues,
-      message: "All printers retrieved successfully",
+      message: printerIoTId ? "Printer retrieved successfully" : "All printers retrieved successfully",
     });
   } catch (error) {
     console.error("Error fetching printer(s):", error);
     res.status(500).json({ error: "Failed to retrieve printer(s)" });
   }
 });
+
 
 // Update an existing printer
 router.put(

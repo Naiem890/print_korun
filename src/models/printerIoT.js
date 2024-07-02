@@ -20,16 +20,19 @@ const printerIoTSchema = new mongoose.Schema({
   status: {
     type: String,
     enum: [
-      "ONLINE",
-      "OFFLINE",
-      "ACTIVE",
-      "INACTIVE",
-      "PAPER_JAM",
-      "NO_PAPER",
-      "NO_TONER",
+      "ONLINE", // if printer is online, it can be used for printing
+      "OFFLINE", // if printer is offline, it cannot be used for printing
+      "PAPER_JAM", // if printer has paper jam, it cannot be used for printing
+      "NO_PAPER", // if printer has no paper, it cannot be used for printing
+      "NO_TONER", // if printer has no toner, it cannot be used for printing
     ],
     required: true,
     default: "OFFLINE",
+  },
+  printingOrder: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Order",
+    default: null,
   },
   colorPrintPrice: {
     type: Number,
