@@ -7,6 +7,7 @@ const mqtt = require("mqtt");
 require("dotenv").config();
 
 let Order = null;
+let Printer = null;
 let db = null;
 
 async function dbConnect() {
@@ -18,6 +19,7 @@ async function dbConnect() {
     console.log("Database connected");
     db = client.db(); // Get the default database
     Order = db.collection("orders"); // Get the collection
+    Printer = db.collection("printeriots");
   } catch (error) {
     console.error("Error connecting to the database:", error);
   }
@@ -56,7 +58,7 @@ client.on("message", async (topic, message) => {
     return;
   }
 
-  console.log(`Received message: ${message}`);
+  console.log(`Received message: ${message}`, data);
 
   const { responseTopic } = data;
 
@@ -91,6 +93,9 @@ async function handlePrintOrder(orderId) {
     console.log("orderId", orderId);
     const _id = new ObjectId(orderId); // Use ObjectId from MongoDB driver
     const order = await Order.findOne({ _id: _id });
+    const printerId = order.printerId;
+
+    console.log("printerId", printerId);
 
     if (order && order.file) {
       console.log("Order found, processing file...");
@@ -101,6 +106,25 @@ async function handlePrintOrder(orderId) {
       // Save file to temporary location
       fs.writeFileSync("/tmp/printfile", fileBuffer);
       console.log("File written to /tmp/printfile");
+
+      const printer = await Printer.findOne({ 
+        _id: printerId
+      });
+
+      console.log("printer", printer);
+      
+      const updatedPrinter =  await Printer.updateOne(
+        { _id: printerId },
+        { $set: { printingOrder: printerId } }
+      );
+
+      // update the order status to PRINTING
+      await Order.updateOne(
+        { _id: _id },
+        { $set: { status: "PRINTING" } }
+      );
+
+      console.log("updatedPrinter", updatedPrinter);
 
       // Get the first available enabled printer
       exec(
@@ -123,14 +147,54 @@ async function handlePrintOrder(orderId) {
 
             // Print the file using the first available enabled printer
             exec(
-              `lp -d ${firstEnabledPrinter} -o ${colorOption} /tmp/printfile`,
-              (error, stdout, stderr) => {
+              // `lp -d ${firstEnabledPrinter} -o ${colorOption} /tmp/printfile`,
+              `sleep 100`,
+              async (error, stdout, stderr) => {
                 if (error) {
                   console.error(`Printing error: ${error}`);
+                  await Printer.updateOne(
+                    { _id: printerId },
+                    { $set: { printingOrder: null } }
+                  );
+
+                  await Order.updateOne(
+                    { _id: _id },
+                    { $set: { status: "INCOMPLETE" } }
+                  );
+
                   return { error: error.message };
                 }
-                console.log(`Printing stdout: ${stdout}`);
-                console.error(`Printing stderr: ${stderr}`);
+                stdout && console.log(`Printing stdout: ${stdout}`);
+                stderr && console.error(`Printing stderr: ${stderr}`);
+                
+                // Update the printer's printingOrder to null after printing
+               
+                await Order.updateOne(
+                  { _id: _id },
+                  { $set: { status: "COMPLETED" } }
+                );
+
+                // first check if any other order is in queue
+                const queue = await Order.find({
+                  printerId: printerId,
+                  status: { $in: ["IN_QUEUE"] },
+                }).toArray();
+
+                if (queue.length === 0) {
+                  console.log("Updating printer's printingOrder to null");
+                  
+                  await Printer.updateOne(
+                    { _id: printerId },
+                    { $set: { printingOrder: null } }
+                  );
+                } else {
+                  console.log("Queue not empty, printing next order...", queue);
+                  // call this same function again with the first order in queue
+                  const nextOrder = queue[0];
+                  console.log("Next order in queue:", nextOrder);
+                  handlePrintOrder(nextOrder._id);
+                }
+
                 return { stdout, stderr };
               }
             );
