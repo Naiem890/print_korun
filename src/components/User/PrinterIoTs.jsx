@@ -39,8 +39,7 @@ export default function PrinterIoTs() {
       const modifiedPrinterIoTs = result.data.printerIoTs.map((printerIoT) => {
         return {
           ...printerIoT,
-          bgColor: `bg-${getStatusColor(printerIoT.status)}`, // Updated this line
-          textColor: `text-${getStatusColor(printerIoT.status)}`, // Updated this line
+          bgColor: getStatusColor(printerIoT.status),
         };
       });
       setPrinterIoTs(modifiedPrinterIoTs);
@@ -101,25 +100,23 @@ export default function PrinterIoTs() {
   };
 
   const getStatusColor = (status) => {
-    console.log("Status:", status);
     switch (status) {
       case "ONLINE":
-        return "green-500";
-
+        return "green";
       case "OFFLINE":
-        return "red-500";
+        return "red";
       case "ACTIVE":
-        return "blue-500";
+        return "blue";
       case "INACTIVE":
-        return "gray-500";
+        return "gray";
       case "PAPER_JAM":
-        return "orange-500";
+        return "orange";
       case "NO_PAPER":
-        return "yellow-500";
+        return "yellow";
       case "NO_TONER":
-        return "purple-500";
+        return "purple";
       default:
-        return "gray-500";
+        return "gray";
     }
   };
 
@@ -195,7 +192,7 @@ export default function PrinterIoTs() {
             <div className="uppercase tracking-wide text-sm text-indigo-500 font-semibold flex items-center gap-4">
               <div className="indicator">
                 <span
-                  style={{ color: `!${printerIoT.bgColor.split("-")[1]}` }}
+                  style={{ backgroundColor: printerIoT.bgColor }}
                   title={printerIoT.status}
                   className={`indicator-item indicator-bottom badge-warning right-2 bottom-2 badge-xs rounded-full`}
                 ></span>
