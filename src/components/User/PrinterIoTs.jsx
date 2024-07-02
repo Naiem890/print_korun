@@ -9,6 +9,8 @@ import {
   PrinterIcon,
   MinusIcon,
   PlusIcon,
+  QueueListIcon,
+  ClockIcon,
 } from "@heroicons/react/24/outline";
 import React, { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
@@ -17,6 +19,7 @@ import { fixedButtonClass, fixedInputClass } from "../../Utils/constant";
 import { Axios } from "../../api/api";
 import { useNavigate } from "react-router-dom";
 import { truncateAndAddEllipsis } from "../../Utils/helper";
+import { getStatusColor } from "../../Utils/helper";
 
 export default function PrinterIoTs() {
   const [printerIoTs, setPrinterIoTs] = useState([]);
@@ -99,26 +102,6 @@ export default function PrinterIoTs() {
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "ONLINE":
-        return "green";
-      case "OFFLINE":
-        return "red";
-      case "ACTIVE":
-        return "blue";
-      case "INACTIVE":
-        return "gray";
-      case "PAPER_JAM":
-        return "orange";
-      case "NO_PAPER":
-        return "yellow";
-      case "NO_TONER":
-        return "purple";
-      default:
-        return "gray";
-    }
-  };
 
   const handlePrinterFilter = (printerIoT) => {
     return (
@@ -189,7 +172,7 @@ export default function PrinterIoTs() {
             key={printerIoT._id}
             className="bg-white rounded-xl shadow-sm border hover:shadow-xl transition-all cursor-pointer mb-4 relative group px-8 py-6 flex flex-col"
           >
-            <div className="uppercase tracking-wide text-sm text-indigo-500 font-semibold flex items-center gap-4">
+            <div className="tracking-wide text-sm text-indigo-500 font-semibold flex items-center gap-4">
               <div className="indicator">
                 <span
                   style={{ backgroundColor: printerIoT.bgColor }}
@@ -200,14 +183,46 @@ export default function PrinterIoTs() {
                   <PrinterIcon className="w-6 h-6 text-emerald-500" />
                 </div>
               </div>
-              <h1
-                className="font-semibold text-gray-900"
-                title={printerIoT.location}
-              >
-                {truncateAndAddEllipsis(
-                  showAdditionalInfo ? printerIoT.name : printerIoT.location
-                )}
-              </h1>
+              <div className="w-full">
+                <h1
+                  className="font-semibold uppercase text-gray-900"
+                  title={printerIoT.location}
+                >
+                  {truncateAndAddEllipsis(
+                    showAdditionalInfo ? printerIoT.name : printerIoT.location
+                  )}
+                </h1>
+                <div className="flex justify-between items-center mt-2">
+                  <span>
+                    {printerIoT.status}
+                  </span>
+                  {
+                    printerIoT.status === "ONLINE" ? (
+                      
+                        <span className="flex items-center text-orange-500" title="Order In Queue">
+                          <QueueListIcon className="w-5 h-5 mr-2 -rotate-90" /> {printerIoT.orderQueue?.length || 0}
+                        </span>
+                        
+                    ) : ""
+                  }
+                  {
+                    printerIoT.status === "ONLINE" ? (
+                      <span className="flex items-center text-blue-500" title="Estimated Time">
+                        <ClockIcon className="w-5 h-5 mr-2" />
+                        {(() => {
+                          const totalSeconds = printerIoT.orderQueue
+                            .filter(p => p.status === "IN_QUEUE" || p.status === "PRINTING")
+                            .reduce((total, order) => total + (order.pages * 30), 0);
+
+                          const totalMinutes = Math.ceil(totalSeconds / 60);
+
+                          return totalMinutes ? `${totalMinutes} ${totalMinutes > 1 ? 'mins' : 'min'}` : "Available";
+                        })()}
+                        </span>
+                    ) : ""
+                  }
+                </div>
+              </div>
             </div>
             <div className="divider my-3 opacity-40"></div>
             <div className={`${showAdditionalInfo ? "" : "hidden"}`}>

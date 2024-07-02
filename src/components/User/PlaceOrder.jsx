@@ -7,13 +7,40 @@ import {
   ClipboardDocumentListIcon,
   XCircleIcon,
   MapIcon,
+  DocumentDuplicateIcon,
+  ClockIcon,
+  QueueListIcon,
+  ArrowPathIcon,
 } from "@heroicons/react/24/outline";
+import {StarIcon
+} from "@heroicons/react/24/solid";
 import Loader from "../Common/Loader";
 import Modal from "../Common/Modal";
 import { toast } from "react-hot-toast";
 
 import PaymentImage from "../../assets/makePayment.png";
 import { InfoBlock } from "./PrinterIoTs";
+import { getStatusColor } from "../../Utils/helper";
+
+const QueueItem = ({ item, index }) => {
+  const estimatedTimePerPage = 0.3; // Assuming 0.3 minutes per page for estimation
+  const estimatedTime = item.pages * estimatedTimePerPage;
+
+  return (
+    <div className={`relative flex-shrink-0 w-40 border shadow-sm p-2 rounded-md ${item.status === 'PRINTING' ? 'bg-green-100' : ''}`}>
+      {item.highPriority && (
+        <div className="absolute top-2 right-2">
+          <StarIcon className="w-4 h-4 text-green-700" />
+        </div>
+      )}
+      <h3 className="font-semibold text-md"> #{index + 1} Document</h3>
+      <div className="flex justify-between items-center mt-2">
+        <p className="flex items-center text-sm gap-1"><DocumentDuplicateIcon className="w-4 h-4"/>{item.pages}</p>
+        <p className="flex items-center text-sm gap-1"><ClockIcon className="w-4 h-4"/>{estimatedTime.toFixed(2)} min</p>
+      </div>
+    </div>
+  );
+};
 
 export default function PlaceOrder() {
   const { printerIoTId } = useParams();
@@ -179,6 +206,12 @@ export default function PlaceOrder() {
     }
   };
 
+  const handleRefresh = async (e) => {
+    e.preventDefault();
+    const result = await Axios.get(`/printerIoT/${printerIoTId}`);
+    setPrinterIoT(result.data.printerIoTs);
+  };
+
   return (
     <>
       <div className="lg:my-4 mb-10 px-5 lg:mr-12">
@@ -202,9 +235,25 @@ export default function PlaceOrder() {
                   Printer Details
                 </label>
                 <div className="border shadow-sm px-6 py-6 rounded-xl">
-                  <h2 className="font-semibold mb-2 text-lg">
-                    {printerIoT?.name}
-                  </h2>
+                  <div className="flex items-center justify-between mb-2">
+                    <h2 className="font-semibold text-lg">
+                      {printerIoT?.name}
+                    </h2>
+                    <div className="flex items-center justify-center gap-3 mb-2">
+                      <div className="font-semibold flex items-center gap-2" style={{color: getStatusColor(printerIoT.status)}}>
+                        <span className="w-2 h-2 rounded-full" style={{backgroundColor: getStatusColor(printerIoT.status)}}></span> <span>{printerIoT.status}</span>
+                      </div>
+                      {
+                        printerIoT.status === "ONLINE" ? (
+                          
+                            <span className="flex items-center text-orange-500" title="Order In Queue">
+                              <QueueListIcon className="w-5 h-5 mr-2 -rotate-90" /> {printerIoT.orderQueue?.length || 0}
+                            </span>
+                            
+                        ) : ""
+                      }
+                    </div>
+                  </div>
                   <h2 className="text-sm text-gray-500">
                     {printerIoT?.location}
                   </h2>
@@ -232,6 +281,33 @@ export default function PlaceOrder() {
                   )}
                 </div>
               </div>
+              {
+                printerIoT.orderQueue.length > 0 && (
+                  <div className="my-5">
+                    <div className="flex justify-between items-center">
+                      <div className="mb-3 ">
+                        <div className="block text-lg font-semibold text-[#07074D]">
+                          Estimated Time : {" "}
+                          {Math.ceil(printerIoT.orderQueue.reduce((total, order) => total + (order.pages * 30), 0) / 60)} min
+                        </div>
+                        <div>
+                        <h2 className="text-sm text-gray-500">
+                          Note that the estimated time is approximate. Actual time may vary.
+                        </h2>
+                        </div>
+                      </div>
+                      <button onClick={handleRefresh}>
+                        <ArrowPathIcon className="w-6 h-6"/>
+                      </button>
+                    </div>
+                    <div className="flex gap-4 overflow-x-auto border shadow-sm p-4 rounded-md">
+                      {printerIoT.orderQueue.map((item, i) => (
+                        <QueueItem key={item._id} item={item} index={i} />
+                      ))}
+                    </div>
+                  </div>
+                )
+              }
               <div>
                 <label className="mb-3 block text-lg font-semibold text-[#07074D]">
                   Upload File
@@ -240,13 +316,13 @@ export default function PlaceOrder() {
                   <label
                     htmlFor="dropzone-file"
                     className={`flex flex-col items-center justify-center w-full ${
-                      selectedFile ? "h-52" : "h-72"
+                      selectedFile ? "h-16" : "h-24"
                     } border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50   hover:bg-gray-100`}
                   >
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <div className="flex items-center justify-center gap-4">
                       <svg
                         aria-hidden="true"
-                        className="w-10 h-10 mb-3 text-gray-400"
+                        className="w-10 h-10 text-gray-400"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -259,11 +335,13 @@ export default function PlaceOrder() {
                           d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
                         ></path>
                       </svg>
-                      <p className="mb-2 text-sm text-gray-500 ">
-                        <span className="font-semibold">Click to upload</span>{" "}
+                      <p className="text-sm text-gray-500 ">
+                        <span className="font-semibold">Click to upload
                         or drag and drop
+                        </span>
+                        <p className="text-xs text-gray-500 ">PDF only</p>
                       </p>
-                      <p className="text-xs text-gray-500 ">PDF only</p>
+                      
                     </div>
                     <input
                       type="file"
@@ -298,6 +376,7 @@ export default function PlaceOrder() {
                   </div>
                 )}
               </div>
+              
             </div>
             <div className="">
               <label className="mb-3 block text-lg font-semibold text-[#07074D]">
@@ -457,7 +536,7 @@ export default function PlaceOrder() {
         </div>
       </div>
       {showPaymentModal && (
-        <Modal>
+        <Modal variant="small">
           <button
             type="button"
             onClick={() => {
