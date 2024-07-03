@@ -23,11 +23,10 @@ import { InfoBlock } from "./PrinterIoTs";
 import { getStatusColor } from "../../Utils/helper";
 
 const QueueItem = ({ item, index }) => {
-  const estimatedTimePerPage = 0.3; // Assuming 0.3 minutes per page for estimation
-  const estimatedTime = item.pages * estimatedTimePerPage;
+  const estimatedTime = Math.ceil((item.pages * 30) / 60);
 
   return (
-    <div className={`relative flex-shrink-0 w-40 border shadow-sm p-2 rounded-md ${item.status === 'PRINTING' ? 'bg-green-100' : ''}`}>
+    <div className={`relative flex-shrink-0 w-40 border shadow-sm p-2 rounded-md ${item.status === 'PRINTING' ? 'pulse-bg' : ''}`}>
       {item.highPriority && (
         <div className="absolute top-2 right-2">
           <StarIcon className="w-4 h-4 text-green-700" />
@@ -36,12 +35,11 @@ const QueueItem = ({ item, index }) => {
       <h3 className="font-semibold text-md"> #{index + 1} Document</h3>
       <div className="flex justify-between items-center mt-2">
         <p className="flex items-center text-sm gap-1"><DocumentDuplicateIcon className="w-4 h-4"/>{item.pages}</p>
-        <p className="flex items-center text-sm gap-1"><ClockIcon className="w-4 h-4"/>{estimatedTime.toFixed(2)} min</p>
+        <p className="flex items-center text-sm gap-1"><ClockIcon className="w-4 h-4"/>{estimatedTime} min(s)</p>
       </div>
     </div>
   );
 };
-
 export default function PlaceOrder() {
   const { printerIoTId } = useParams();
   const [printerIoT, setPrinterIoT] = useState(null);

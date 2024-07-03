@@ -1,3 +1,22 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+@keyframes pulse {
+    0% {
+        background-color: #d1fae5;
+    }
+    50% {
+        background-color: #a7f3d0;
+    }
+    100% {
+        background-color: #d1fae5;
+    }
+}
+
+.pulse-bg {
+    animation: pulse 1s infinite;
+}
+
+

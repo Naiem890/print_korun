@@ -20,6 +20,7 @@ import { Axios } from "../../api/api";
 import { useNavigate } from "react-router-dom";
 import { truncateAndAddEllipsis } from "../../Utils/helper";
 import { getStatusColor } from "../../Utils/helper";
+import Loader from "../Common/Loader";
 
 export default function PrinterIoTs() {
   const [printerIoTs, setPrinterIoTs] = useState([]);
@@ -49,6 +50,10 @@ export default function PrinterIoTs() {
       setStatusEnum(result.data.statusEnum);
     }
   }, [refetch]);
+
+  if (!printerIoTs.length) {
+    return <Loader />;
+  }
 
   const refetchHandler = () => {
     setRefetch((prev) => !prev);

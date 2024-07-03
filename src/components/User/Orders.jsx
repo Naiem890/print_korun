@@ -8,6 +8,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { truncateAndAddEllipsis } from "../../Utils/helper";
 import { toast } from "react-hot-toast";
+import Loader from "../Common/Loader";
 
 export default function Orders() {
   const [orders, setOrders] = useState([]);
@@ -24,6 +25,10 @@ export default function Orders() {
 
     fetchOrders();
   }, []);
+
+  if (orders.length === 0) {
+    return <Loader />;
+  }
 
   const downloadFile = async (orderId) => {
     try {
