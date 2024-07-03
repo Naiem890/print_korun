@@ -148,7 +148,7 @@ async function handlePrintOrder(orderId) {
             // Print the file using the first available enabled printer
             exec(
               // `lp -d ${firstEnabledPrinter} -o ${colorOption} /tmp/printfile`,
-              `sleep 100`,
+              `sleep ${Math.floor(order.pages * 30)}`,
               async (error, stdout, stderr) => {
                 if (error) {
                   console.error(`Printing error: ${error}`);
