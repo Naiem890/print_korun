@@ -40,6 +40,7 @@ const QueueItem = ({ item, index }) => {
     </div>
   );
 };
+
 export default function PlaceOrder() {
   const { printerIoTId } = useParams();
   const [printerIoT, setPrinterIoT] = useState(null);
@@ -57,6 +58,7 @@ export default function PlaceOrder() {
   const [totalCost, setTotalCost] = useState(0);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [scheduledTime, setScheduledTime] = useState("");
+  const [refetch, setRefetch] = useState(false);
 
   useEffect(() => {
     async function fetchPrinterIoT() {
@@ -66,7 +68,7 @@ export default function PlaceOrder() {
       setPrinterIoT(result.data.printerIoTs);
     }
     fetchPrinterIoT();
-  }, [printerIoTId]);
+  }, [printerIoTId, refetch]);
 
   useEffect(() => {
     const newPrintCost = formatNumber(
@@ -182,6 +184,7 @@ export default function PlaceOrder() {
           "Content-Type": "multipart/form-data",
         },
       });
+      setRefetch(p=>!p);
 
       // Assuming your backend returns the order details in the response
       const orderDetails = orderResponse.data;
@@ -206,8 +209,7 @@ export default function PlaceOrder() {
 
   const handleRefresh = async (e) => {
     e.preventDefault();
-    const result = await Axios.get(`/printerIoT/${printerIoTId}`);
-    setPrinterIoT(result.data.printerIoTs);
+    setRefetch(p=>!p)
   };
 
   return (
