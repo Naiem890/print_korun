@@ -2,7 +2,7 @@ import axios from "axios";
 
 // Define your Axios instance
 export const Axios = axios.create({
-  baseURL: "https://sohozprint.eastus2.cloudapp.azure.com/api",
+  baseURL: "https://sohoz-print.eastus2.cloudapp.azure.com/api",
   // baseURL: "http://localhost:5001/api",
 });
 
