@@ -26,7 +26,7 @@ app.use(middleware);
 
 // Default route
 app.get("/", (req, res) => {
-  res.send("Welcome to the Print Korun app!");
+  res.send("Welcome to the Print Korun App!");
 });
 
 // Api routes
