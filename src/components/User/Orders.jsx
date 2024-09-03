@@ -5,6 +5,7 @@ import {
   PencilIcon,
   TrashIcon,
   ArrowDownTrayIcon,
+  PrinterIcon,
 } from "@heroicons/react/24/outline";
 import { truncateAndAddEllipsis } from "../../Utils/helper";
 import { toast } from "react-hot-toast";
@@ -132,6 +133,16 @@ export default function Orders() {
                 </div>
               </div>
               <div className="flex gap-4 self-center">
+                {order.status === "ORDER_PLACED" && (
+                  <div>
+                    <a
+                      className="flex items-center gap-2 text-green-600"
+                      onClick={() => printOrder(order._id)}
+                    >
+                      <PrinterIcon className="h-6 w-6" />
+                    </a>
+                  </div>
+                )}
                 <div>
                   <a
                     className="flex items-center gap-2 text-green-600"

@@ -12,8 +12,7 @@ import {
   QueueListIcon,
   ArrowPathIcon,
 } from "@heroicons/react/24/outline";
-import {StarIcon
-} from "@heroicons/react/24/solid";
+import { StarIcon } from "@heroicons/react/24/solid";
 import Loader from "../Common/Loader";
 import Modal from "../Common/Modal";
 import { toast } from "react-hot-toast";
@@ -26,7 +25,11 @@ const QueueItem = ({ item, index }) => {
   const estimatedTime = Math.ceil((item.pages * 30) / 60);
 
   return (
-    <div className={`relative flex-shrink-0 w-40 border shadow-sm p-2 rounded-md ${item.status === 'PRINTING' ? 'pulse-bg' : ''}`}>
+    <div
+      className={`relative flex-shrink-0 w-40 border shadow-sm p-2 rounded-md ${
+        item.status === "PRINTING" ? "pulse-bg" : ""
+      }`}
+    >
       {item.highPriority && (
         <div className="absolute top-2 right-2">
           <StarIcon className="w-4 h-4 text-green-700" />
@@ -34,8 +37,14 @@ const QueueItem = ({ item, index }) => {
       )}
       <h3 className="font-semibold text-md"> #{index + 1} Document</h3>
       <div className="flex justify-between items-center mt-2">
-        <p className="flex items-center text-sm gap-1"><DocumentDuplicateIcon className="w-4 h-4"/>{item.pages}</p>
-        <p className="flex items-center text-sm gap-1"><ClockIcon className="w-4 h-4"/>{estimatedTime} min(s)</p>
+        <p className="flex items-center text-sm gap-1">
+          <DocumentDuplicateIcon className="w-4 h-4" />
+          {item.pages}
+        </p>
+        <p className="flex items-center text-sm gap-1">
+          <ClockIcon className="w-4 h-4" />
+          {estimatedTime} min(s)
+        </p>
       </div>
     </div>
   );
@@ -57,7 +66,7 @@ export default function PlaceOrder() {
   const [serviceCharge, setServiceCharge] = useState(0);
   const [totalCost, setTotalCost] = useState(0);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [scheduledTime, setScheduledTime] = useState("");
+  // const [scheduledTime, setScheduledTime] = useState("");
   const [refetch, setRefetch] = useState(false);
 
   useEffect(() => {
@@ -164,10 +173,10 @@ export default function PlaceOrder() {
       formData.append("scheduledAt", scheduleOption);
 
       // Adjust the scheduledTime based on the scheduleOption
-      formData.append(
-        "scheduledTime",
-        scheduleOption === "Now" ? new Date() : scheduledTime
-      );
+      // formData.append(
+      //   "scheduledTime",
+      //   scheduleOption === "Now" ? new Date() : scheduledTime
+      // );
 
       formData.append("pages", numberOfPages);
       formData.append("copies", numberOfCopies);
@@ -184,7 +193,7 @@ export default function PlaceOrder() {
           "Content-Type": "multipart/form-data",
         },
       });
-      setRefetch(p=>!p);
+      setRefetch((p) => !p);
 
       // Assuming your backend returns the order details in the response
       const orderDetails = orderResponse.data;
@@ -209,7 +218,7 @@ export default function PlaceOrder() {
 
   const handleRefresh = async (e) => {
     e.preventDefault();
-    setRefetch(p=>!p)
+    setRefetch((p) => !p);
   };
 
   return (
@@ -240,18 +249,29 @@ export default function PlaceOrder() {
                       {printerIoT?.name}
                     </h2>
                     <div className="flex items-center justify-center gap-3 mb-2">
-                      <div className="font-semibold flex items-center gap-2" style={{color: getStatusColor(printerIoT.status)}}>
-                        <span className="w-2 h-2 rounded-full" style={{backgroundColor: getStatusColor(printerIoT.status)}}></span> <span>{printerIoT.status}</span>
+                      <div
+                        className="font-semibold flex items-center gap-2"
+                        style={{ color: getStatusColor(printerIoT.status) }}
+                      >
+                        <span
+                          className="w-2 h-2 rounded-full"
+                          style={{
+                            backgroundColor: getStatusColor(printerIoT.status),
+                          }}
+                        ></span>{" "}
+                        <span>{printerIoT.status}</span>
                       </div>
-                      {
-                        printerIoT.status === "ONLINE" ? (
-                          
-                            <span className="flex items-center text-orange-500" title="Order In Queue">
-                              <QueueListIcon className="w-5 h-5 mr-2 -rotate-90" /> {printerIoT.orderQueue?.length || 0}
-                            </span>
-                            
-                        ) : ""
-                      }
+                      {printerIoT.status === "ONLINE" ? (
+                        <span
+                          className="flex items-center text-orange-500"
+                          title="Order In Queue"
+                        >
+                          <QueueListIcon className="w-5 h-5 mr-2 -rotate-90" />{" "}
+                          {printerIoT.orderQueue?.length || 0}
+                        </span>
+                      ) : (
+                        ""
+                      )}
                     </div>
                   </div>
                   <h2 className="text-sm text-gray-500">
@@ -281,33 +301,38 @@ export default function PlaceOrder() {
                   )}
                 </div>
               </div>
-              {
-                printerIoT.orderQueue.length > 0 && (
-                  <div className="my-5">
-                    <div className="flex justify-between items-center">
-                      <div className="mb-3 ">
-                        <div className="block text-lg font-semibold text-[#07074D]">
-                          Estimated Time : {" "}
-                          {Math.ceil(printerIoT.orderQueue.reduce((total, order) => total + (order.pages * 30), 0) / 60)} min
-                        </div>
-                        <div>
-                        <h2 className="text-sm text-gray-500">
-                          Note that the estimated time is approximate. Actual time may vary.
-                        </h2>
-                        </div>
+              {printerIoT.orderQueue.length > 0 && (
+                <div className="my-5">
+                  <div className="flex justify-between items-center">
+                    <div className="mb-3 ">
+                      <div className="block text-lg font-semibold text-[#07074D]">
+                        Estimated Time :{" "}
+                        {Math.ceil(
+                          printerIoT.orderQueue.reduce(
+                            (total, order) => total + order.pages * 30,
+                            0
+                          ) / 60
+                        )}{" "}
+                        min
                       </div>
-                      <button onClick={handleRefresh}>
-                        <ArrowPathIcon className="w-6 h-6"/>
-                      </button>
+                      <div>
+                        <h2 className="text-sm text-gray-500">
+                          Note that the estimated time is approximate. Actual
+                          time may vary.
+                        </h2>
+                      </div>
                     </div>
-                    <div className="flex gap-4 overflow-x-auto border shadow-sm p-4 rounded-md">
-                      {printerIoT.orderQueue.map((item, i) => (
-                        <QueueItem key={item._id} item={item} index={i} />
-                      ))}
-                    </div>
+                    <button onClick={handleRefresh}>
+                      <ArrowPathIcon className="w-6 h-6" />
+                    </button>
                   </div>
-                )
-              }
+                  <div className="flex gap-4 overflow-x-auto border shadow-sm p-4 rounded-md">
+                    {printerIoT.orderQueue.map((item, i) => (
+                      <QueueItem key={item._id} item={item} index={i} />
+                    ))}
+                  </div>
+                </div>
+              )}
               <div>
                 <label className="mb-3 block text-lg font-semibold text-[#07074D]">
                   Upload File
@@ -336,12 +361,11 @@ export default function PlaceOrder() {
                         ></path>
                       </svg>
                       <p className="text-sm text-gray-500 ">
-                        <span className="font-semibold">Click to upload
-                        or drag and drop
+                        <span className="font-semibold">
+                          Click to upload or drag and drop
                         </span>
                         <p className="text-xs text-gray-500 ">PDF only</p>
                       </p>
-                      
                     </div>
                     <input
                       type="file"
@@ -376,7 +400,6 @@ export default function PlaceOrder() {
                   </div>
                 )}
               </div>
-              
             </div>
             <div className="">
               <label className="mb-3 block text-lg font-semibold text-[#07074D]">
@@ -458,7 +481,7 @@ export default function PlaceOrder() {
                     <option value="Now">Now</option>
                     <option value="Later">Later</option>
                   </select>
-                  {scheduleOption === "Later" && (
+                  {/* {scheduleOption === "Later" && (
                     <input
                       type="datetime-local"
                       name="scheduledTime"
@@ -466,7 +489,7 @@ export default function PlaceOrder() {
                       onChange={(e) => setScheduledTime(e.target.value)}
                       className={`${fixedInputClass}`}
                     />
-                  )}
+                  )} */}
                 </div>
               </div>
               <div className="flex gap-5">
