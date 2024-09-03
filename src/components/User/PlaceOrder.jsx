@@ -11,6 +11,7 @@ import {
   ClockIcon,
   QueueListIcon,
   ArrowPathIcon,
+  CheckCircleIcon,
 } from "@heroicons/react/24/outline";
 import { StarIcon } from "@heroicons/react/24/solid";
 import Loader from "../Common/Loader";
@@ -66,6 +67,7 @@ export default function PlaceOrder() {
   const [serviceCharge, setServiceCharge] = useState(0);
   const [totalCost, setTotalCost] = useState(0);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [uploadedFileId, setUploadedFileId] = useState(null);
   // const [scheduledTime, setScheduledTime] = useState("");
   const [refetch, setRefetch] = useState(false);
 
@@ -111,16 +113,60 @@ export default function PlaceOrder() {
     printerIoT?.BWPrintPrice,
   ]);
 
-  const handleFileChange = (e) => {
-    setSelectedFile(e.target.files[0]);
+  const handleFileChange = async (e) => {
+    setUploadedFileId(null);
+    const file = e.target.files[0];
+
+    if (!file) return;
+
+    if (file.size > 20 * 1024 * 1024) {
+      setFileUploadError(true);
+      toast.error("File size should be less than 20MB");
+      return;
+    }
+
+    if (file.type !== "application/pdf") {
+      setFileUploadError(true);
+      toast.error("Please select a pdf file");
+      return;
+    }
+
     setFileUploadError(false);
+    setSelectedFile(file);
+
     var reader = new FileReader();
-    reader.readAsBinaryString(e.target.files[0]);
-    reader.onloadend = function () {
+    reader.readAsBinaryString(file);
+
+    reader.onloadend = async function () {
       var count = reader.result.match(/\/Type[\s]*\/Page[^s]/g).length;
       console.log("Number of Pages:", count);
-
       setNumberOfPages(count);
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        toast("Uploading file... Please wait a moment!", {
+          theme: "colored",
+          icon: "⌛",
+        });
+        const response = await Axios.post("order/upload", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+        console.log("File upload response:", response.data);
+
+        setUploadedFileId(response.data.fileId);
+
+        toast.success("File uploaded successfully!", {
+          theme: "colored",
+        });
+      } catch (error) {
+        console.error("File upload error:", error);
+        setFileUploadError(true);
+        toast.error("File upload failed");
+      }
     };
   };
 
@@ -154,61 +200,40 @@ export default function PlaceOrder() {
     try {
       const transactionId = e.target.transactionId.value;
 
-      // Make a POST request to create a new payment
       const paymentResponse = await Axios.post("/payment", {
         transactionId,
         amount: totalCost,
       });
 
-      // Assuming your backend returns the payment details in the response
       const paymentDetails = paymentResponse.data;
 
-      // Create a FormData object to send files and other form data
-      const formData = new FormData();
-      formData.append("file", selectedFile);
-      formData.append("paymentId", paymentDetails._id); // Assuming paymentId is returned in paymentDetails
-      formData.append("printerId", printerIoT._id); // Assuming printerId is available in printerIoT
-      formData.append("printType", selectedPrintType);
-      formData.append("highPriority", isPriority);
-      formData.append("scheduledAt", scheduleOption);
+      const data = {
+        fileId: uploadedFileId,
+        paymentId: paymentDetails._id, 
+        printerId: printerIoT._id,
+        printType: selectedPrintType,
+        highPriority: isPriority,
+        scheduledAt: scheduleOption,
+        pages: numberOfPages,
+        copies: numberOfCopies,
+        totalCost: totalCost,
+      };
 
-      // Adjust the scheduledTime based on the scheduleOption
-      // formData.append(
-      //   "scheduledTime",
-      //   scheduleOption === "Now" ? new Date() : scheduledTime
-      // );
-
-      formData.append("pages", numberOfPages);
-      formData.append("copies", numberOfCopies);
-      formData.append("totalCost", totalCost);
-
-      toast("Uploading file... Please wait a moment!", {
-        theme: "colored",
-        icon: "⌛",
-      });
-
-      // Make a POST request to create a new order with payment and file information
-      const orderResponse = await Axios.post("/order", formData, {
+      const orderResponse = await Axios.post("/order", JSON.stringify(data), {
         headers: {
-          "Content-Type": "multipart/form-data",
+          "Content-Type": "application/json",
         },
       });
       setRefetch((p) => !p);
 
-      // Assuming your backend returns the order details in the response
       const orderDetails = orderResponse.data;
 
-      // Perform any additional actions based on the orderDetails if needed
-
-      // Show a success message
       toast.success("Payment and Order placed successfully!", {
         theme: "colored",
       });
 
-      // Close the payment modal or redirect to a success page
       setShowPaymentModal(false);
     } catch (error) {
-      // Handle errors, show an error message, or log the error
       console.error("Error in Payment and Order placement:", error);
       toast.error("Payment and Order placement failed. Please try again.", {
         theme: "colored",
@@ -397,6 +422,12 @@ export default function PlaceOrder() {
                         <XMarkIcon className="w-5 h-5" />
                       </button>
                     </div>
+                  </div>
+                )}
+                {uploadedFileId && (
+                  <div className="flex items-center space-x-2 text-green-600">
+                    <CheckCircleIcon className="h-6 w-6" aria-hidden="true" />
+                    <span>Uploaded successfully</span>
                   </div>
                 )}
               </div>
