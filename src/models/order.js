@@ -22,7 +22,7 @@ const orderSchema = new Schema(
       default: "NOW",
       set: (value) => value.toUpperCase(),
     },
-    scheduledTime: { type: Date, required: true },
+    // scheduledTime: { type: Date, required: false },
     status: {
       type: String,
       enum: [
