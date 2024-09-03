@@ -7,7 +7,7 @@ const orderSchema = new Schema(
     paymentId: { type: Schema.Types.ObjectId, ref: "Payment", required: true },
     printerId: { type: Schema.Types.ObjectId, ref: "Printer", required: true },
     // eslint-disable-next-line no-undef
-    file: { type: Buffer, required: true },
+    fileId: { type: Schema.Types.ObjectId, ref: "OrderFile", required: true },
     printType: {
       type: String,
       enum: ["COLOR", "BLACKNWHITE"],

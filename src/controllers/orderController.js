@@ -4,14 +4,24 @@ const Order = require("../models/order");
 const { validateToken } = require("../middlewares/validateToken");
 const { Types } = require("mongoose");
 const { sendMessage } = require("../config/mqttClient");
+const orderFile = require("../models/orderFile");
 const router = express.Router();
 
 // Multer setup
 const storage = multer.memoryStorage(); // Store files in memory as Buffer
-const upload = multer({ storage: storage, limits: { fileSize: 20 * 1024 * 1024 } });
+const upload = multer({
+  storage: storage,
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === "application/pdf") {
+      cb(null, true);
+    } else {
+      cb(new Error("Invalid file type. Only PDFs are allowed."), false); // Reject the file
+    }
+  },
+  limits: { fileSize: 20 * 1024 * 1024 },
+});
 
-router.post("/", validateToken, upload.single("file"), async (req, res) => {
-  console.log("req.user=>>>", req.user);
+router.post("/", validateToken, async (req, res) => {
   try {
     const userId = req.user._id;
     // Assuming the request body contains the necessary information for the order
@@ -26,17 +36,17 @@ router.post("/", validateToken, upload.single("file"), async (req, res) => {
       pages,
       copies,
       totalCost,
+      fileId,
     } = req.body;
 
     // Access the file buffer from the Multer middleware
-    const fileBuffer = req.file.buffer;
 
     // Create a new order instance
     const newOrder = new Order({
       userId,
       paymentId,
       printerId,
-      file: fileBuffer,
+      fileId,
       printType,
       highPriority,
       scheduledAt,
@@ -65,13 +75,38 @@ router.post("/", validateToken, upload.single("file"), async (req, res) => {
         payload: {
           orderId: savedOrder._id,
         },
-      })
+      });
     } else {
       // If the queue is not empty, update the status of the order to IN_QUEUE
       savedOrder.status = "IN_QUEUE";
       await savedOrder.save();
     }
     res.status(201).json(savedOrder);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+router.post("/upload", upload.single("file"), async (req, res) => {
+  try {
+    if (req.fileValidationError) {
+      return res.status(400).json({ error: req.fileValidationError });
+    }
+
+    const fileBuffer = req.file.buffer;
+
+    const newFile = new orderFile({
+      data: fileBuffer,
+      filename: req.file.originalname,
+      contentType: req.file.mimetype,
+    });
+
+    const savedFile = await newFile.save();
+
+    res
+      .status(201)
+      .json({ message: "File uploaded succesfully", fileId: savedFile._id });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -172,8 +207,12 @@ router.get("/:orderId/download", async (req, res) => {
       return res.status(404).json({ error: "Order not found" });
     }
 
-    // Assuming the file is stored as a Buffer in the 'file' field of the order
-    const fileBuffer = order.file;
+    const file = await orderFile.findById(order.fileId);
+
+    if (!file) {
+      return res.status(404).json({ error: "File not found" });
+    }
+    const fileBuffer = file.data;
 
     res.send(fileBuffer);
   } catch (error) {
