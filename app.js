@@ -8,6 +8,7 @@ require("dotenv").config();
 
 let Order = null;
 let Printer = null;
+let OrderFile = null
 let db = null;
 
 async function dbConnect() {
@@ -20,6 +21,7 @@ async function dbConnect() {
     db = client.db(); // Get the default database
     Order = db.collection("orders"); // Get the collection
     Printer = db.collection("printeriots");
+    OrderFile = db.collection("orderfiles");
   } catch (error) {
     console.error("Error connecting to the database:", error);
   }
@@ -93,15 +95,19 @@ async function handlePrintOrder(orderId) {
     console.log("orderId", orderId);
     const _id = new ObjectId(orderId); // Use ObjectId from MongoDB driver
     const order = await Order.findOne({ _id: _id });
+    const file = await OrderFile.findOne({_id: order.fileId})
     const printerId = order.printerId;
 
+    console.log("order", order);
     console.log("printerId", printerId);
 
-    if (order && order.file) {
+    console.log("file", file);
+
+    if (order && file.data) {
       console.log("Order found, processing file...");
 
       // Convert MongoDB Binary to Buffer
-      const fileBuffer = order.file.buffer;
+      const fileBuffer = file.data.buffer;
 
       // Save file to temporary location
       fs.writeFileSync("/tmp/printfile", fileBuffer);
@@ -147,9 +153,9 @@ async function handlePrintOrder(orderId) {
 
             // Print the file using the first available enabled printer
             exec(
-              // `lp -d ${firstEnabledPrinter} -o ${colorOption} /tmp/printfile`,
-              `sleep ${Math.floor(order.pages * 30)}`,
-              async (error, stdout, stderr) => {
+              `lp -d ${firstEnabledPrinter} -o ${colorOption} /tmp/printfile`,
+              // `sleep ${Math.floor(order.pages * 30)}`,
+              async (error, stdout, stderr) => {q
                 if (error) {
                   console.error(`Printing error: ${error}`);
                   await Printer.updateOne(
