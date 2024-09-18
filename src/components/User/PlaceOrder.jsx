@@ -75,10 +75,13 @@ export default function PlaceOrder() {
     async function fetchPrinterIoT() {
       const result = await Axios.get(`/printerIoT/${printerIoTId}`);
       console.log("printerIoT", result.data);
-      // setSelectedPrintType(result.data?.printerIoTs?.colorPrintPrice ? "color" : "blacknwhite");
       setPrinterIoT(result.data.printerIoTs);
     }
+
     fetchPrinterIoT();
+    const intervalId = setInterval(fetchPrinterIoT, 5000);
+
+    return () => clearInterval(intervalId);
   }, [printerIoTId, refetch]);
 
   useEffect(() => {
