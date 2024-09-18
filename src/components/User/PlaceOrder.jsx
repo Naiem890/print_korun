@@ -21,9 +21,10 @@ import { toast } from "react-hot-toast";
 import PaymentImage from "../../assets/makePayment.png";
 import { InfoBlock } from "./PrinterIoTs";
 import { getStatusColor } from "../../Utils/helper";
+import { PrintNowModal } from "./PrintNowModal";
 
-const QueueItem = ({ item, index }) => {
-  const estimatedTime = Math.ceil((item.pages * 30) / 60);
+export const QueueItem = ({ item, index }) => {
+  const estimatedTime = Math.ceil((item.pages * 8 + 8) / 60);
 
   return (
     <div
@@ -212,7 +213,7 @@ export default function PlaceOrder() {
 
       const data = {
         fileId: uploadedFileId,
-        paymentId: paymentDetails._id, 
+        paymentId: paymentDetails._id,
         printerId: printerIoT._id,
         printType: selectedPrintType,
         highPriority: isPriority,
@@ -336,10 +337,12 @@ export default function PlaceOrder() {
                       <div className="block text-lg font-semibold text-[#07074D]">
                         Estimated Time :{" "}
                         {Math.ceil(
-                          printerIoT.orderQueue.reduce(
-                            (total, order) => total + order.pages * 30,
+                          (printerIoT.orderQueue.reduce(
+                            (total, order) => total + order.pages * 8,
                             0
-                          ) / 60
+                          ) +
+                            8) /
+                            60
                         )}{" "}
                         min
                       </div>
@@ -355,7 +358,14 @@ export default function PlaceOrder() {
                     </button>
                   </div>
                   <div className="flex gap-4 overflow-x-auto border shadow-sm p-4 rounded-md">
-                    {printerIoT.orderQueue.map((item, i) => (
+                    {[
+                      ...printerIoT.orderQueue.filter(
+                        (item) => item.status === "PRINTING"
+                      ),
+                      ...printerIoT.orderQueue
+                        .filter((item) => item.status === "IN_QUEUE")
+                        .sort((a, b) => b.highPriority - a.highPriority),
+                    ].map((item, i) => (
                       <QueueItem key={item._id} item={item} index={i} />
                     ))}
                   </div>

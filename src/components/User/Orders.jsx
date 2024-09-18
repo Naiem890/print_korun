@@ -10,9 +10,13 @@ import {
 import { truncateAndAddEllipsis } from "../../Utils/helper";
 import { toast } from "react-hot-toast";
 import Loader from "../Common/Loader";
+import { PrintNowModal } from "./PrintNowModal";
 
 export default function Orders() {
   const [orders, setOrders] = useState([]);
+  const [showPrintNowModal, setShowPrintNowModal] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [refetch, setRefetch] = useState(false);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -25,7 +29,7 @@ export default function Orders() {
     };
 
     fetchOrders();
-  }, []);
+  }, [refetch]);
 
   if (orders.length === 0) {
     return <Loader />;
@@ -75,7 +79,6 @@ export default function Orders() {
     <div className="lg:my-4 mb-10 px-5 lg:mr-12">
       <h2 className="sm:text-3xl text-xl font-semibold">Orders</h2>
       <div className="divider"></div>
-
       <div className="">
         {orders.length === 0 ? (
           <p className="text-sm font-semibold">No orders available</p>
@@ -137,7 +140,11 @@ export default function Orders() {
                   <div>
                     <a
                       className="flex items-center gap-2 text-green-600"
-                      onClick={() => printOrder(order._id)}
+                      onClick={() => {
+                        // printOrder(order._id);
+                        setSelectedOrder(order);
+                        setShowPrintNowModal(true);
+                      }}
                     >
                       <PrinterIcon className="h-6 w-6" />
                     </a>
@@ -156,6 +163,14 @@ export default function Orders() {
           ))
         )}
       </div>
+      {
+        <PrintNowModal
+          showModal={showPrintNowModal}
+          setShowModal={setShowPrintNowModal}
+          order={selectedOrder}
+          refetchHandler={() => setRefetch(!refetch)}
+        />
+      }{" "}
     </div>
   );
 }
