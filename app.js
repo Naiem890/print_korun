@@ -155,7 +155,7 @@ async function handlePrintOrder(orderId) {
             exec(
               `lp -d ${firstEnabledPrinter} -o ${colorOption} /tmp/printfile`,
               // `sleep ${Math.floor(order.pages * 30)}`,
-              async (error, stdout, stderr) => {q
+              async (error, stdout, stderr) => {
                 if (error) {
                   console.error(`Printing error: ${error}`);
                   await Printer.updateOne(
