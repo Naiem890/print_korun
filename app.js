@@ -151,7 +151,7 @@ async function handlePrintOrder(orderId) {
                 ? "ColorModel=Gray"
                 : "ColorModel=RGB";
 
-            // Print the file using the first available enabled printer
+            const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
             exec(
               `lp -d ${firstEnabledPrinter} -o ${colorOption} /tmp/printfile`,
               // `sleep ${Math.floor(order.pages * 30)}`,
@@ -172,30 +172,35 @@ async function handlePrintOrder(orderId) {
                 }
                 stdout && console.log(`Printing stdout: ${stdout}`);
                 stderr && console.error(`Printing stderr: ${stderr}`);
-                
-                // Update the printer's printingOrder to null after printing
-               
+
+                const waitTime = 16000 + ((order.pages * order.copies) - 1) * 8000;
+                console.log(`Waiting for ${waitTime / 1000} seconds before completing the order...`);
+
+                await sleep(waitTime);
+
+                console.log(`Updating order ${_id} to COMPLETED after waiting.`);
+
                 await Order.updateOne(
                   { _id: _id },
                   { $set: { status: "COMPLETED" } }
                 );
 
-                // first check if any other order is in queue
                 const queue = await Order.find({
                   printerId: printerId,
                   status: { $in: ["IN_QUEUE"] },
-                }).toArray();
+                })
+                .sort({ highPriority: -1 })
+                .toArray();
 
                 if (queue.length === 0) {
-                  console.log("Updating printer's printingOrder to null");
-                  
+                  console.log("No more orders in queue, updating printer's printingOrder to null.");
+
                   await Printer.updateOne(
                     { _id: printerId },
                     { $set: { printingOrder: null } }
                   );
                 } else {
-                  console.log("Queue not empty, printing next order...", queue);
-                  // call this same function again with the first order in queue
+                  console.log("Queue not empty, processing next order...");
                   const nextOrder = queue[0];
                   console.log("Next order in queue:", nextOrder);
                   handlePrintOrder(nextOrder._id);
