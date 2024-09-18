@@ -60,26 +60,28 @@ router.post("/", validateToken, async (req, res) => {
     // Save the order to the database
     const savedOrder = await newOrder.save();
 
-    // get order with status IN_QUEUE and PRINTING
-    const queue = await Order.find({
-      printerId: printerId,
-      status: { $in: ["IN_QUEUE", "PRINTING"] },
-    });
-
-    console.log("queue", queue);
-
-    if (queue.length === 0) {
-      // If the queue is empty, send the order to the printer
-      sendMessage({
-        action: "PRINT_ORDER",
-        payload: {
-          orderId: savedOrder._id,
-        },
+    if (savedOrder.scheduledAt === "NOW") {
+      // get order with status IN_QUEUE and PRINTING
+      const queue = await Order.find({
+        printerId: printerId,
+        status: { $in: ["IN_QUEUE", "PRINTING"] },
       });
-    } else {
-      // If the queue is not empty, update the status of the order to IN_QUEUE
-      savedOrder.status = "IN_QUEUE";
-      await savedOrder.save();
+
+      console.log("queue", queue);
+
+      if (queue.length === 0) {
+        // If the queue is empty, send the order to the printer
+        sendMessage({
+          action: "PRINT_ORDER",
+          payload: {
+            orderId: savedOrder._id,
+          },
+        });
+      } else {
+        // If the queue is not empty, update the status of the order to IN_QUEUE
+        savedOrder.status = "IN_QUEUE";
+        await savedOrder.save();
+      }
     }
     res.status(201).json(savedOrder);
   } catch (error) {
@@ -87,6 +89,57 @@ router.post("/", validateToken, async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
+router.post("/now", validateToken, async (req, res) => {
+  try {
+    const { _id: orderId } = req.body;
+
+    if (!orderId) {
+      return res.status(400).json({ error: "Order ID is required" });
+    }
+
+    // Find the order by its ID
+    const order = await Order.findById(orderId);
+
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    const { printerId } = order;
+
+    const queue = await Order.find({
+      printerId: printerId,
+      status: { $in: ["IN_QUEUE", "PRINTING"] },
+    }).sort({ highPriority: -1 });
+
+    console.log("queue", queue);
+
+    if (queue.length === 0) {
+      order.status = "PRINTING";
+      await order.save();
+
+      sendMessage({
+        action: "PRINT_ORDER",
+        payload: {
+          orderId: order._id,
+        },
+      });
+      console.log(`Order ${order._id} is now printing`);
+    } else {
+      order.status = "IN_QUEUE";
+      await order.save();
+      console.log(`Order ${order._id} is now in queue`);
+    }
+
+    res
+      .status(200)
+      .json({ message: `Order ${order._id} processed successfully`, order });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 
 router.post("/upload", upload.single("file"), async (req, res) => {
   try {
